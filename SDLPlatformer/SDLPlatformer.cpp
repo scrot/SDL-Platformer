@@ -68,9 +68,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void cleanup(SDL_Window* win)
+void cleanup(SDL_State &state)
 {
-	SDL_DestroyWindow(win);
+	SDL_DestroyWindow(state.win);
 
 	SDL_Quit();
 }
