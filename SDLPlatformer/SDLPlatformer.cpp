@@ -24,7 +24,10 @@ bool initialize(SDL_State& state);
 
 int main(int argc, char *argv[])
 {
+	uint64_t prevTime = SDL_GetTicks();
+
 	bool isRunning = true;
+	bool flipHorizontal = false;
 
 	SDL_State state;
 	state.width = 1600;
@@ -56,6 +59,10 @@ int main(int argc, char *argv[])
 	// Start the main game loop
 	while (isRunning)
 	{
+		uint64_t nowTime = SDL_GetTicks();
+		float deltaTime = (nowTime - prevTime) / 1000.0f; // Convert from milliseconds to seconds
+		prevTime = nowTime;	// Update the game state here using deltaTime
+
 		// Check events first
 		SDL_Event event{ 0 };
 
@@ -81,6 +88,23 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// Handle movement input
+		float moveAmount = 0.0f;
+		if (keys[SDL_SCANCODE_A])
+		{
+			moveAmount = -75.0f;
+			flipHorizontal = true;
+		}	
+		else
+			if (keys[SDL_SCANCODE_D])
+			{
+				moveAmount += 75.0f;
+				flipHorizontal = false;
+			}
+				
+
+		playerX += moveAmount * deltaTime;
+
 		// Perform drawing commands
 
 		// Set the background color and clear the back buffer
@@ -104,7 +128,8 @@ int main(int argc, char *argv[])
 			.h = spriteSize
 		};
 
-		SDL_RenderTexture(state.renderer, idleTexture, &src, &dst);
+		SDL_RenderTextureRotated(state.renderer, idleTexture, &src, &dst, 0, nullptr, 
+			(flipHorizontal == true)? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 
 		// Swap buffers and present the back buffer
 		SDL_RenderPresent(state.renderer);
