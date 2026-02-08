@@ -2,6 +2,7 @@
 //
 #include<SDL3/SDL.h>
 #include<SDL3/SDL_main.h>
+#include<SDL3_image/SDL_image.h>
 
 #include "SDLPlatformer.h"
 
@@ -13,7 +14,7 @@ struct SDL_State
 	SDL_Renderer *renderer;
 };
 
-void cleanup(SDL_Window* win);
+void cleanup(SDL_State &state);
 
 int main(int argc, char *argv[])
 {
@@ -35,14 +36,28 @@ int main(int argc, char *argv[])
 	if (!state.win)
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unable to create SDL Window", state.win);
-		cleanup(state.win);
+		cleanup(state);
 
 		return -1;
 	}
 
+	// Create the renderer
+	state.renderer = SDL_CreateRenderer(state.win, NULL);
+
+	if (!state.renderer)
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unable to create SDL Renderer", state.win);
+		cleanup(state);
+		return -2;
+	}
+
+	// Load game assets here
+	SDL_Texture* idleTexture = IMG_LoadTexture(state.renderer, "assets/idle.png");
+
 	// Start the main game loop
 	while (isRunning)
 	{
+		// Check events first
 		SDL_Event event{ 0 };
 
 		while(SDL_PollEvent(&event))
@@ -60,16 +75,31 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
+
+		// Perform drawing commands
+
+		// Set the background color and clear the back buffer
+		SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+		SDL_RenderClear(state.renderer);
+
+		// Render the idle texture
+		SDL_RenderTexture(state.renderer, idleTexture, NULL, NULL);
+
+		// Swap buffers and present the back buffer
+		SDL_RenderPresent(state.renderer);
 	}
 	cout << "Hello CMake." << endl;
 
-	cleanup(state.win);
+	// Free game assets here
+	SDL_DestroyTexture(idleTexture);
+	cleanup(state);
 
 	return 0;
 }
 
 void cleanup(SDL_State &state)
 {
+	SDL_DestroyRenderer(state.renderer);
 	SDL_DestroyWindow(state.win);
 
 	SDL_Quit();
