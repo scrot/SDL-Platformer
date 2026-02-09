@@ -28,7 +28,7 @@ struct SDL_State
 
 struct Resources
 {
-	const int ANIM_PLAYER_IDLE = 0; // Start frame of the idle animation in the sprite sheet
+	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	std::vector<Animation> playerAnims;
 
 	std::vector<SDL_Texture*> textures;
@@ -60,8 +60,8 @@ struct Resources
 	 */
 	void load(SDL_State& state)
 	{
-		playerAnims.resize(5);
-		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);
+		playerAnims.resize(5);	// There are 5 player animations, so we resize the vector to accomodate them.
+		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);	// There are 8 frames in the idle animation that lasts 1.6 seconds.
 
 		// Load the idle texture
 		texIdle = loadTexture(state.renderer, "assets/idle.png");
@@ -103,7 +103,6 @@ int main(int argc, char *argv[])
 	uint64_t prevTime = SDL_GetTicks();
 
 	bool isRunning = true;
-	bool flipHorizontal = false;
 
 	SDL_State state;
 	state.width = 1600;
@@ -119,15 +118,23 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	// Load game assets here
+	// Load game assets
 	Resources res;
 	res.load(state);
 	
 
 	// Setup game data here
+	GameState gs;
+	GameObject player;
+
+	// Create player object
+	player.type = ObjectType::player;
+	player.texture = res.texIdle;
+	player.animations = res.playerAnims;
+	player.currentAnimation = res.ANIM_PLAYER_IDLE;
+	gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+
 	const bool *keys = SDL_GetKeyboardState(NULL);
-	float playerX = 150;
-	const float floor = state.logH;
 
 	// Start the main game loop
 	while (isRunning)
@@ -161,30 +168,32 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		// Handle movement input
-		float moveAmount = 0.0f;
-		if (keys[SDL_SCANCODE_A])
-		{
-			moveAmount = -75.0f;
-			flipHorizontal = true;
-		}	
-		else
-			if (keys[SDL_SCANCODE_D])
-			{
-				moveAmount += 75.0f;
-				flipHorizontal = false;
-			}
-				
-
-		playerX += moveAmount * deltaTime;
-
 		// Perform drawing commands
+
+		// Update all objects
+		for (auto& layer : gs.layers)
+		{
+			for (auto& obj : layer)
+			{
+				if (obj.currentAnimation != -1)
+				{
+					obj.animations[obj.currentAnimation].step(deltaTime);
+				}
+			}
+		}
 
 		// Set the background color and clear the back buffer
 		SDL_SetRenderDrawColor(state.renderer, 20, 10, 30, 255);
 		SDL_RenderClear(state.renderer);
 
-		// Render the idle texture
+		// Draw all objects
+		for (auto &layer : gs.layers)
+		{
+			for (auto &obj : layer)
+			{
+				drawObject(state, gs, obj, deltaTime);
+			}
+		}
 		
 		// Swap buffers and present the back buffer
 		SDL_RenderPresent(state.renderer);
@@ -260,15 +269,18 @@ bool initialize(SDL_State& state)
 void drawObject(const SDL_State &state, GameState &gs, GameObject &obj, float deltaTime)
 { 
 	const float spriteSize = 32;
+	float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * spriteSize : 0;
 
+	// The source rectangle (animation frame) that we want o render from the sprite sheet
 	SDL_FRect src
 	{
-		.x = 0,
+		.x = srcX,
 		.y = 0,
 		.w = spriteSize,
 		.h = spriteSize
 	};
 
+	// The destination rectangle (position on the screen) that we want to render to
 	SDL_FRect dst
 	{
 		.x = obj.position.x,
