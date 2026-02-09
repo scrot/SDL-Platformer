@@ -6,6 +6,37 @@
 
 #include "animation.h"
 
+enum class PlayerState
+{
+	idle, jumping, running, crouching
+};
+
+struct PlayerData
+{
+	PlayerState state;
+	PlayerData()
+	{
+		state = PlayerState::idle;
+	}
+};
+
+struct LevelData
+{
+
+};
+
+struct EnemyData
+{
+
+};
+
+union ObjectData
+{
+	PlayerData playerData;
+	LevelData levelData;
+	EnemyData enemyData;
+};
+
 enum class ObjectType
 {
 	player,
@@ -15,16 +46,18 @@ enum class ObjectType
 
 struct GameObject
 {
-	ObjectType type;
-	glm::vec2 position;
-	glm::vec2 velocity;
-	glm::vec2 acceleration;
-	float direction;
-	std::vector<Animation> animations;
-	int currentAnimation;
-	SDL_Texture* texture;
+	ObjectType type;	// The type of game object we're dealing with
+	ObjectData data;	// Data about the object
+	glm::vec2 position;	// X and Y coordinates of the game object
+	glm::vec2 velocity;	// Object's speed
+	glm::vec2 acceleration;	// Object's acceleration value
+	float direction;	// Direction in which the object is facing
+	float maxSpeedX;	// Max speed in the X direction
+	std::vector<Animation> animations;	// Vector containing all animations for this GameObject
+	int currentAnimation;	// Animation that's currently playing
+	SDL_Texture* texture;	// Currently loaded texture
 	
-	GameObject()
+	GameObject() : data{ .levelData = LevelData() } // Initialize the union with levelData by default
 	{
 		type = ObjectType::level;
 		direction = 1;
@@ -33,5 +66,6 @@ struct GameObject
 		acceleration = glm::vec2(0);
 		currentAnimation = -1;
 		texture = nullptr;
+		maxSpeedX = 0.0f;
 	}
 };

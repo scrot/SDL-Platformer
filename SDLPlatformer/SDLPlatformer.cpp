@@ -24,6 +24,12 @@ struct SDL_State
 	int height;
 	int logH;
 	int logW;
+	const bool* keys;
+
+	SDL_State()
+	{
+		keys = SDL_GetKeyboardState(NULL);
+	}
 };
 
 struct Resources
@@ -77,8 +83,6 @@ struct Resources
 			SDL_DestroyTexture(tex);
 		}
 	}
-
-	
 };
 
 // Streucture to hold all gane info, including game objects, player index, etc.
@@ -97,6 +101,7 @@ struct GameState
 void cleanup(SDL_State &state);
 bool initialize(SDL_State& state);
 void drawObject(const SDL_State& state, GameState& gs, GameObject& obj, float deltaTime);
+void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject& obj, float deltaTime);
 
 int main(int argc, char *argv[])
 {
@@ -132,9 +137,10 @@ int main(int argc, char *argv[])
 	player.texture = res.texIdle;
 	player.animations = res.playerAnims;
 	player.currentAnimation = res.ANIM_PLAYER_IDLE;
-	gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+	player.acceleration = glm::vec2(300, 0);
+	player.maxSpeedX = 100;
 
-	const bool *keys = SDL_GetKeyboardState(NULL);
+	gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
 
 	// Start the main game loop
 	while (isRunning)
@@ -173,8 +179,10 @@ int main(int argc, char *argv[])
 		// Update all objects
 		for (auto& layer : gs.layers)
 		{
-			for (auto& obj : layer)
+			for (GameObject obj : layer)
 			{
+				update(state, gs, res, obj, deltaTime);
+
 				if (obj.currentAnimation != -1)
 				{
 					obj.animations[obj.currentAnimation].step(deltaTime);
@@ -292,4 +300,55 @@ void drawObject(const SDL_State &state, GameState &gs, GameObject &obj, float de
 	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 
 	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+}
+
+void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
+{
+	if (obj.type == ObjectType::player)
+	{
+		float currentDirection = 0.0f;
+
+		if (state.keys[SDL_SCANCODE_A])
+			currentDirection += -1.0f;
+
+		if (state.keys[SDL_SCANCODE_D])
+			currentDirection += 1.0f;
+
+		if (currentDirection)
+			obj.direction = currentDirection;
+
+		switch (obj.data.playerData.state)
+		{
+			case PlayerState::idle:
+			{
+				if (currentDirection)
+					obj.data.playerData.state = PlayerState::running;
+				break;
+			}
+			case PlayerState::jumping:
+			{
+				break;
+			}
+			case PlayerState::running:
+			{
+				if (!currentDirection)
+					obj.data.playerData.state = PlayerState::idle;
+				break;
+			}
+			case PlayerState::crouching:
+			{
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
+
+		// Add acceleration to velocity
+		obj.velocity += currentDirection * obj.acceleration * deltaTime;
+
+		// Add velocity to position
+		obj.position += obj.velocity * deltaTime;
+	}
 }
