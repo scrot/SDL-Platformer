@@ -6,8 +6,8 @@
 #include<vector>
 #include<string>
 
-#include "SDLPlatformer.h"
-#include "animation.h"
+#include "includes/SDLPlatformer.h"
+#include "includes/animation.h"
 
 using namespace std;
 
@@ -29,10 +29,16 @@ struct Resources
 	std::vector<SDL_Texture*> textures;
 	SDL_Texture* texIdle;
 
+	/* @brief Load the requested texture. 
+	* 
+	*	@param renderer -- SDL_Renderer object
+	*	@param filePath -- The path to the requested texture.
+	*	
+	*	@return The loaded SDL_Texture object.
+	*/
 	SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& filePath)
 	{
-		// Load the idle texture
-		SDL_Texture* tex = IMG_LoadTexture(renderer, filePath.c_str());
+		SDL_Texture* tex = IMG_LoadTexture(renderer, filePath.c_str());	// Convert the file path to a C-style string
 
 		// Set the texture scale mode to nearest neighbor (pixelated)
 		SDL_SetTextureScaleMode(tex, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
@@ -42,14 +48,23 @@ struct Resources
 		return tex;
 	}
 
+	/**
+	 * @brief Load all required textures.
+	 * 
+	 * @param state -- SDL_State object that contains the renderer info.
+	 */
 	void load(SDL_State& state)
 	{
 		playerAnims.resize(5);
 		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);
 
+		// Load the idle texture
 		texIdle = loadTexture(state.renderer, "assets/idle.png");
 	}
 
+	/**
+	 * @brief Free all loaded textures.
+	 */
 	void unload()
 	{
 		for (SDL_Texture* tex : textures)
@@ -184,6 +199,11 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+/* 
+* @brief Clean up and free SDL resources
+* 
+* @param state -- state object that contains the window and renderer info.
+*/
 void cleanup(SDL_State &state)
 {
 	SDL_DestroyRenderer(state.renderer);
@@ -192,6 +212,12 @@ void cleanup(SDL_State &state)
 	SDL_Quit();
 }
 
+/*
+* @brief Initialize SDL libraries and set up the render window
+* @param state -- state object that contains the window and renderer info.
+* 
+* @return true if initialization was successful, false otherwise.
+*/
 bool initialize(SDL_State& state)
 {
 	bool initSuccess = true;
