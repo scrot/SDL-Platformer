@@ -3,8 +3,11 @@
 #include<SDL3/SDL.h>
 #include<SDL3/SDL_main.h>
 #include<SDL3_image/SDL_image.h>
+#include<vector>
+#include<string>
 
 #include "SDLPlatformer.h"
+#include "animation.h"
 
 using namespace std;
 
@@ -16,6 +19,46 @@ struct SDL_State
 	int height;
 	int logH;
 	int logW;
+};
+
+struct Resources
+{
+	const int ANIM_PLAYER_IDLE = 0; // Start frame of the idle animation in the sprite sheet
+	std::vector<Animation> playerAnims;
+
+	std::vector<SDL_Texture*> textures;
+	SDL_Texture* texIdle;
+
+	SDL_Texture* loadTexture(SDL_Renderer* renderer, const std::string& filePath)
+	{
+		// Load the idle texture
+		SDL_Texture* tex = IMG_LoadTexture(renderer, filePath.c_str());
+
+		// Set the texture scale mode to nearest neighbor (pixelated)
+		SDL_SetTextureScaleMode(tex, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
+
+		textures.push_back(tex);
+
+		return tex;
+	}
+
+	void load(SDL_State& state)
+	{
+		playerAnims.resize(5);
+		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);
+
+		texIdle = loadTexture(state.renderer, "assets/idle.png");
+	}
+
+	void unload()
+	{
+		for (SDL_Texture* tex : textures)
+		{
+			SDL_DestroyTexture(tex);
+		}
+	}
+
+	
 };
 
 // Function prototypes
@@ -44,12 +87,9 @@ int main(int argc, char *argv[])
 	}
 
 	// Load game assets here
-
-	// Load the idle texture
-	SDL_Texture* idleTexture = IMG_LoadTexture(state.renderer, "assets/idle.png");
-
-	// Set the texture scale mode to nearest neighbor (pixelated)
-	SDL_SetTextureScaleMode(idleTexture, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
+	Resources res;
+	res.load(state);
+	
 
 	// Setup game data here
 	const bool *keys = SDL_GetKeyboardState(NULL);
@@ -128,7 +168,7 @@ int main(int argc, char *argv[])
 			.h = spriteSize
 		};
 
-		SDL_RenderTextureRotated(state.renderer, idleTexture, &src, &dst, 0, nullptr, 
+		SDL_RenderTextureRotated(state.renderer, res.texIdle, &src, &dst, 0, nullptr, 
 			(flipHorizontal == true)? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
 
 		// Swap buffers and present the back buffer
@@ -138,7 +178,7 @@ int main(int argc, char *argv[])
 	cout << "Hello CMake." << endl;
 
 	// Free game assets here
-	SDL_DestroyTexture(idleTexture);
+	res.unload();
 	cleanup(state);
 
 	return 0;
