@@ -6,8 +6,8 @@
 #include<vector>
 #include<string>
 
-#include "includes/SDLPlatformer.h"
-#include "includes/animation.h"
+#include "include/SDLPlatformer.h"
+#include "include/animation.h"
 
 using namespace std;
 
