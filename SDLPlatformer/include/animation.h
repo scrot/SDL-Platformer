@@ -1,6 +1,6 @@
 #pragma once
 
-#include "include/timer.h"
+#include "timer.h"
 
 class Animation
 {

@@ -1,15 +1,20 @@
 ﻿// SDLPlatformer.cpp : Defines the entry point for the application.
 //
-#include<SDL3/SDL.h>
-#include<SDL3/SDL_main.h>
-#include<SDL3_image/SDL_image.h>
-#include<vector>
-#include<string>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <SDL3_image/SDL_image.h>
+#include <vector>
+#include <string>
+#include <array>
 
 #include "include/SDLPlatformer.h"
-#include "include/animation.h"
+#include "include/gameobject.h"
 
 using namespace std;
+
+// Global constants
+const size_t LAYER_IDX_LEVEL = 0;
+const size_t LAYER_IDX_CHARACTERS = 1;
 
 struct SDL_State
 {
@@ -76,9 +81,22 @@ struct Resources
 	
 };
 
+// Streucture to hold all gane info, including game objects, player index, etc.
+struct GameState
+{
+	std::array<std::vector<GameObject>, 2> layers;
+	int playerIndex;
+
+	GameState()
+	{
+		playerIndex = 0;	// WILL CHANGE THIS WHEN WE LOAD MAPS
+	}
+};
+
 // Function prototypes
 void cleanup(SDL_State &state);
 bool initialize(SDL_State& state);
+void drawObject(const SDL_State& state, GameState& gs, GameObject& obj, float deltaTime);
 
 int main(int argc, char *argv[])
 {
@@ -93,7 +111,7 @@ int main(int argc, char *argv[])
 	state.logW = 640;
 	state.logH = 320;
 
-	const float spriteSize = 32;
+	
 
 	// Initialize window and renderer
 	if (!initialize(state))
@@ -167,25 +185,7 @@ int main(int argc, char *argv[])
 		SDL_RenderClear(state.renderer);
 
 		// Render the idle texture
-		SDL_FRect src
-		{
-			.x = 0,
-			.y = 0,
-			.w = spriteSize,
-			.h = spriteSize
-		};
-
-		SDL_FRect dst
-		{
-			.x = playerX,
-			.y = floor - spriteSize,
-			.w = spriteSize,
-			.h = spriteSize
-		};
-
-		SDL_RenderTextureRotated(state.renderer, res.texIdle, &src, &dst, 0, nullptr, 
-			(flipHorizontal == true)? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
-
+		
 		// Swap buffers and present the back buffer
 		SDL_RenderPresent(state.renderer);
 	}
@@ -255,4 +255,29 @@ bool initialize(SDL_State& state)
 
 	return initSuccess;
 
+}
+
+void drawObject(const SDL_State &state, GameState &gs, GameObject &obj, float deltaTime)
+{ 
+	const float spriteSize = 32;
+
+	SDL_FRect src
+	{
+		.x = 0,
+		.y = 0,
+		.w = spriteSize,
+		.h = spriteSize
+	};
+
+	SDL_FRect dst
+	{
+		.x = obj.position.x,
+		.y = obj.position.y,
+		.w = spriteSize,
+		.h = spriteSize
+	};
+
+	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+
+	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 }
