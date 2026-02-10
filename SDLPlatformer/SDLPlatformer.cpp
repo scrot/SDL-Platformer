@@ -339,10 +339,6 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 			{
 				break;
 			}
-			default:
-			{
-				break;
-			}
 		}
 
 		// Add acceleration to velocity
