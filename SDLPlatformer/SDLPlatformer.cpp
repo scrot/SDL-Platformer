@@ -26,9 +26,9 @@ struct SDL_State
 	int logW;
 	const bool* keys;
 
-	SDL_State()
+	SDL_State() : keys(SDL_GetKeyboardState(NULL))
 	{
-		keys = SDL_GetKeyboardState(NULL);
+
 	}
 };
 
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 		// Draw all objects
 		for (auto &layer : gs.layers)
 		{
-			for (auto &obj : layer)
+			for (GameObject &obj : layer)
 			{
 				drawObject(state, gs, obj, deltaTime);
 			}
