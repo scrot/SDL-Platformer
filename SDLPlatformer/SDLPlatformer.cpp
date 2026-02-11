@@ -35,10 +35,13 @@ struct SDL_State
 struct Resources
 {
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
+	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation
+
 	std::vector<Animation> playerAnims;
 
 	std::vector<SDL_Texture*> textures;
 	SDL_Texture* texIdle;
+	SDL_Texture* texRunning;
 
 	/* @brief Load the requested texture. 
 	* 
@@ -68,9 +71,11 @@ struct Resources
 	{
 		playerAnims.resize(5);	// There are 5 player animations, so we resize the vector to accomodate them.
 		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);	// There are 8 frames in the idle animation that lasts 1.6 seconds.
+		playerAnims[ANIM_PLAYER_RUNNING] = Animation(4, 0.5f); // 4 frames in running animation that lasts 0.5 seconds.
 
-		// Load the idle texture
+		// Load the animations
 		texIdle = loadTexture(state.renderer, "assets/idle.png");
+		texRunning = loadTexture(state.renderer, "assets/run.png");
 	}
 
 	/**
@@ -323,7 +328,11 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 			case PlayerState::idle:
 			{
 				if (currentDirection)
+				{
 					obj.data.playerData.state = PlayerState::running;
+					obj.texture = rs.texRunning;
+					obj.currentAnimation = rs.ANIM_PLAYER_RUNNING;
+				}
 				else
 				{
 					// Slow down the player when idle
@@ -344,7 +353,11 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 			case PlayerState::running:
 			{
 				if (!currentDirection)
+				{
 					obj.data.playerData.state = PlayerState::idle;
+					obj.texture = rs.texIdle;
+					obj.currentAnimation = rs.ANIM_PLAYER_IDLE;
+				}
 				break;
 			}
 			case PlayerState::crouching:
