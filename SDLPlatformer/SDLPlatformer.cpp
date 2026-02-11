@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 		// Update all objects
 		for (auto& layer : gs.layers)
 		{
-			for (GameObject obj : layer)
+			for (GameObject &obj : layer)
 			{
 				update(state, gs, res, obj, deltaTime);
 

@@ -34,4 +34,9 @@ public:
 	{
 		timer.step(deltaTime);
 	}
+
+	float getTime()
+	{
+		return timer.getTime();
+	}
 };
