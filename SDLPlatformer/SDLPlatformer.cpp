@@ -119,6 +119,9 @@ bool initialize(SDLState& state);
 void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float deltaTime);
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject& obj, float deltaTime);
 void createTiles(const SDLState& state, GameState& gs, const Resources& res);
+void collisionResponse(const SDLState& state, GameState& gs, Resources& res, const SDL_FRect& rectA, const SDL_FRect& rectB,
+					   const SDL_FRect& intersection, GameObject& objA, GameObject& objB, float deltaTime);
+void checkCollision(const SDLState& state, GameState& gs, Resources& res, GameObject& a, GameObject& b, float deltaTime);
 
 int main(int argc, char *argv[])
 {
@@ -392,6 +395,16 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 
 	// Add velocity to position
 	obj.position += obj.velocity * deltaTime;
+
+	// Handle collision detection
+	for(auto &layer : gs.layers)
+	{
+		for (GameObject &other : layer)
+		{
+			if (&obj != &other)
+				checkCollision(state, gs, rs, obj, other, deltaTime);
+		}
+	}
 }
 
 void createTiles(const SDLState& state, GameState& gs, const Resources& res)
@@ -406,7 +419,7 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 	*/
 	short map[MAP_ROWS][MAP_COLS] =
 	{
-		4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -460,4 +473,83 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 				}
 			}
 		}
+}
+
+void checkCollision(const SDLState& state, GameState& gs, Resources &res, GameObject &a, GameObject &b, float deltaTime)
+{
+	SDL_FRect rectA
+	{
+		.x = a.position.x,
+		.y = a.position.y,
+		.w = TILE_SIZE,
+		.h = TILE_SIZE
+	};
+
+	SDL_FRect rectB
+	{
+		.x = b.position.x,
+		.y = b.position.y,
+		.w = TILE_SIZE,
+		.h = TILE_SIZE
+	};
+
+	SDL_FRect intersection{ 0 };
+
+	if (SDL_GetRectIntersectionFloat(&rectA, &rectB, &intersection))
+	{
+		// Found intersection, resolve collision here
+		collisionResponse(state, gs, res, rectA, rectB, intersection, a, b, deltaTime);
+	}
+}
+
+void collisionResponse(const SDLState& state, GameState& gs, Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, 
+						const SDL_FRect& intersection, GameObject &objA, GameObject &objB, float deltaTime)
+{
+	// Collision response logic goes here
+	// Object we are checking
+	if (objA.type == ObjectType::player)
+	{
+		// Object we are colliding with
+		switch (objB.type)
+		{
+			case ObjectType::level:
+			{
+				if (intersection.w < intersection.h)
+				{
+					// Horizontal collision, resolve on the X axis
+					if (objA.velocity.x > 0)
+					{
+						// Moving right, push back to the left
+						objA.position.x -= intersection.w;
+					}
+					else 
+						if (objA.velocity.x < 0)
+						{
+							// Moving left, push back to the right
+							objA.position.x += intersection.w;
+						}
+
+					objA.velocity.x = 0;	// Stop horizontal movement on collision
+				}
+				else
+				{
+					// Vertical collision, resolve on the Y axis
+					if (objA.velocity.y > 0)
+					{
+						// Moving right, push back to the left
+						objA.position.y -= intersection.h;
+					}
+					else 
+						if (objA.velocity.x < 0)
+							{
+								// Moving left, push back to the right
+								objA.position.y += intersection.h;
+							}
+
+					objA.velocity.y = 0;	// Stop vertical movement on collision
+				}
+				break;
+			}
+		}
+	}
 }
