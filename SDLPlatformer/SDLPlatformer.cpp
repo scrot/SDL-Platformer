@@ -432,6 +432,7 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 		obj.type = type;
 		obj.texture = tex;
 		obj.position = glm::vec2(col * TILE_SIZE, state.logH - (MAP_ROWS - row) * TILE_SIZE);
+		obj.collider = { .x = 0, .y = 0, .w = TILE_SIZE, .h = TILE_SIZE };
 
 		return obj;
 	};
@@ -466,7 +467,9 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 					player.maxSpeedX = 100;
 					player.data.playerData = PlayerData();
 					player.dynamic = true;
-
+					player.collider = { .x = 11, .y = 6,
+										.w = 10, .h = 26
+					};
 					gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
 
 					break;
@@ -479,18 +482,18 @@ void checkCollision(const SDLState& state, GameState& gs, Resources &res, GameOb
 {
 	SDL_FRect rectA
 	{
-		.x = a.position.x,
-		.y = a.position.y,
-		.w = TILE_SIZE,
-		.h = TILE_SIZE
+		.x = a.position.x + a.collider.x,
+		.y = a.position.y + a.collider.y,
+		.w = a.collider.w,
+		.h = a.collider.h
 	};
 
 	SDL_FRect rectB
 	{
-		.x = b.position.x,
-		.y = b.position.y,
-		.w = TILE_SIZE,
-		.h = TILE_SIZE
+		.x = b.position.x + b.collider.x,
+		.y = b.position.y + b.collider.y,
+		.w = b.collider.w,
+		.h = b.collider.h
 	};
 
 	SDL_FRect intersection{ 0 };

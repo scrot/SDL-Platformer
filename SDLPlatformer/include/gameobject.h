@@ -57,8 +57,9 @@ struct GameObject
 	int currentAnimation;	// Animation that's currently playing
 	SDL_Texture* texture;	// Currently loaded texture
 	bool dynamic;		// Whether the object is dynamic (affected by physics) or static (not affected by physics)	
+	SDL_FRect collider;		// Collider rectangle for the object
 	
-	GameObject() : data{ .levelData = LevelData() } // Initialize the union with levelData by default
+	GameObject() : data{ .levelData = LevelData() }, collider{ 0 } // Initialize the union with levelData by default
 	{
 		type = ObjectType::level;
 		direction = 1;
