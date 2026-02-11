@@ -139,6 +139,7 @@ int main(int argc, char *argv[])
 	player.currentAnimation = res.ANIM_PLAYER_IDLE;
 	player.acceleration = glm::vec2(300, 0);
 	player.maxSpeedX = 100;
+	player.data.playerData = PlayerData();
 
 	gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
 
@@ -323,6 +324,17 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 			{
 				if (currentDirection)
 					obj.data.playerData.state = PlayerState::running;
+				else
+				{
+					// Slow down the player when idle
+					const float factor = (obj.velocity.x > 0) ? -1.5f : 1.5f;
+					float amount = factor * obj.acceleration.x * deltaTime;
+
+					if (std::abs(obj.velocity.x) < std::abs(amount))
+						obj.velocity.x = 0;
+					else
+						obj.velocity.x += amount;
+				}
 				break;
 			}
 			case PlayerState::jumping:
@@ -339,10 +351,18 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 			{
 				break;
 			}
+			default:
+				break;
 		}
 
 		// Add acceleration to velocity
 		obj.velocity += currentDirection * obj.acceleration * deltaTime;
+
+		// Clamp velocity to max speed
+		if (std::abs(obj.velocity.x) > obj.maxSpeedX)
+		{
+			obj.velocity.x = obj.direction * obj.maxSpeedX;
+		}
 
 		// Add velocity to position
 		obj.position += obj.velocity * deltaTime;
