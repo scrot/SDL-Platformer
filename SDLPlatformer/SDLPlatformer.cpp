@@ -19,7 +19,7 @@ const int MAP_ROWS = 5;
 const int MAP_COLS = 50;
 const int TILE_SIZE = 32;
 
-struct SDL_State
+struct SDLState
 {
 	SDL_Window *win;
 	SDL_Renderer *renderer;
@@ -29,7 +29,7 @@ struct SDL_State
 	int logW;
 	const bool* keys;
 
-	SDL_State() : keys(SDL_GetKeyboardState(NULL))
+	SDLState() : keys(SDL_GetKeyboardState(NULL))
 	{
 
 	}
@@ -45,6 +45,10 @@ struct Resources
 	std::vector<SDL_Texture*> textures;
 	SDL_Texture* texIdle;
 	SDL_Texture* texRunning;
+	SDL_Texture* texBrick;
+	SDL_Texture* texGrass;
+	SDL_Texture* texGround;
+	SDL_Texture* texPanel;
 
 	/* @brief Load the requested texture. 
 	* 
@@ -68,9 +72,9 @@ struct Resources
 	/**
 	 * @brief Load all required textures.
 	 * 
-	 * @param state -- SDL_State object that contains the renderer info.
+	 * @param state -- SDLState object that contains the renderer info.
 	 */
-	void load(SDL_State& state)
+	void load(SDLState& state)
 	{
 		playerAnims.resize(5);	// There are 5 player animations, so we resize the vector to accomodate them.
 		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);	// There are 8 frames in the idle animation that lasts 1.6 seconds.
@@ -79,6 +83,10 @@ struct Resources
 		// Load the animations
 		texIdle = loadTexture(state.renderer, "assets/idle.png");
 		texRunning = loadTexture(state.renderer, "assets/run.png");
+		texBrick = loadTexture(state.renderer, "assets/tiles/brick.png");
+		texGrass = loadTexture(state.renderer, "assets/tiles/grass.png");
+		texGround = loadTexture(state.renderer, "assets/tiles/ground.png");
+		texPanel = loadTexture(state.renderer, "assets/tiles/panel.png");
 	}
 
 	/**
@@ -106,11 +114,11 @@ struct GameState
 };
 
 // Function prototypes
-void cleanup(SDL_State &state);
-bool initialize(SDL_State& state);
-void drawObject(const SDL_State& state, GameState& gs, GameObject& obj, float deltaTime);
-void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject& obj, float deltaTime);
-void createTiles(const SDL_State& state, GameState& gs, const Resources& res);
+void cleanup(SDLState &state);
+bool initialize(SDLState& state);
+void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float deltaTime);
+void update(const SDLState& state, GameState& gs, Resources& rs, GameObject& obj, float deltaTime);
+void createTiles(const SDLState& state, GameState& gs, const Resources& res);
 
 int main(int argc, char *argv[])
 {
@@ -118,7 +126,7 @@ int main(int argc, char *argv[])
 
 	bool isRunning = true;
 
-	SDL_State state;
+	SDLState state;
 	state.width = 1600;
 	state.height = 900;
 	state.logW = 640;
@@ -222,7 +230,7 @@ int main(int argc, char *argv[])
 * 
 * @param state -- state object that contains the window and renderer info.
 */
-void cleanup(SDL_State &state)
+void cleanup(SDLState &state)
 {
 	SDL_DestroyRenderer(state.renderer);
 	SDL_DestroyWindow(state.win);
@@ -236,7 +244,7 @@ void cleanup(SDL_State &state)
 * 
 * @return true if initialization was successful, false otherwise.
 */
-bool initialize(SDL_State& state)
+bool initialize(SDLState& state)
 {
 	bool initSuccess = true;
 
@@ -275,7 +283,7 @@ bool initialize(SDL_State& state)
 
 }
 
-void drawObject(const SDL_State &state, GameState &gs, GameObject &obj, float deltaTime)
+void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime)
 { 
 	const float spriteSize = 32;
 	float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * spriteSize : 0;
@@ -303,16 +311,23 @@ void drawObject(const SDL_State &state, GameState &gs, GameObject &obj, float de
 	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 }
 
-void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
+void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
 {
+	if (obj.dynamic)
+	{
+		// Add gravity
+		obj.velocity += glm::vec2(0, 500) * deltaTime;
+	}
+	
+
 	if (obj.type == ObjectType::player)
 	{
 		float currentDirection = 0.0f;
 
-		if (state.keys[SDL_SCANCODE_A])
+		if (state.keys[SDL_SCANCODE_A] || state.keys[SDL_SCANCODE_LEFT])
 			currentDirection += -1.0f;
 
-		if (state.keys[SDL_SCANCODE_D])
+		if (state.keys[SDL_SCANCODE_D] || state.keys[SDL_SCANCODE_RIGHT])
 			currentDirection += 1.0f;
 
 		if (currentDirection)
@@ -372,12 +387,14 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 			obj.velocity.x = obj.direction * obj.maxSpeedX;
 		}
 
-		// Add velocity to position
-		obj.position += obj.velocity * deltaTime;
+		
 	}
+
+	// Add velocity to position
+	obj.position += obj.velocity * deltaTime;
 }
 
-void createTiles(const SDL_State& state, GameState& gs, const Resources& res)
+void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 {
 	/*
 		1 -- Ground
@@ -389,11 +406,21 @@ void createTiles(const SDL_State& state, GameState& gs, const Resources& res)
 	*/
 	short map[MAP_ROWS][MAP_COLS] =
 	{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	};
+
+	const auto createObject = [&state](int row, int col, SDL_Texture* tex, ObjectType type)
+	{
+		GameObject obj;
+		obj.type = type;
+		obj.texture = tex;
+		obj.position = glm::vec2(col * TILE_SIZE, state.logH - (MAP_ROWS - row) * TILE_SIZE);
+
+		return obj;
 	};
 
 	for (int row = 0; row < MAP_ROWS; row++)
@@ -401,20 +428,31 @@ void createTiles(const SDL_State& state, GameState& gs, const Resources& res)
 		{
 			switch (map[row][col])
 			{
+				case 1: // Ground
+				{
+					GameObject ground = createObject(row, col, res.texGround, ObjectType::level);
+					gs.layers[LAYER_IDX_LEVEL].push_back(ground);
+					break;
+				}
+				case 2: // Panel
+				{
+					GameObject ground = createObject(row, col, res.texPanel, ObjectType::level);
+					gs.layers[LAYER_IDX_LEVEL].push_back(ground);
+					break;
+				}
 				case 4: // Player
 				{
 					// Create player object
-					GameObject player;
+					GameObject player = createObject(row, col, res.texIdle, ObjectType::player);
 
 					player.position = glm::vec2(col * TILE_SIZE, 
 												state.logH - (MAP_ROWS - row) * TILE_SIZE);
-					player.type = ObjectType::player;
-					player.texture = res.texIdle;
 					player.animations = res.playerAnims;
 					player.currentAnimation = res.ANIM_PLAYER_IDLE;
 					player.acceleration = glm::vec2(300, 0);
 					player.maxSpeedX = 100;
 					player.data.playerData = PlayerData();
+					player.dynamic = true;
 
 					gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
 

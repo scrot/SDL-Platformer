@@ -56,6 +56,7 @@ struct GameObject
 	std::vector<Animation> animations;	// Vector containing all animations for this GameObject
 	int currentAnimation;	// Animation that's currently playing
 	SDL_Texture* texture;	// Currently loaded texture
+	bool dynamic;		// Whether the object is dynamic (affected by physics) or static (not affected by physics)	
 	
 	GameObject() : data{ .levelData = LevelData() } // Initialize the union with levelData by default
 	{
@@ -67,5 +68,6 @@ struct GameObject
 		currentAnimation = -1;
 		texture = nullptr;
 		maxSpeedX = 0.0f;
+		dynamic = false;
 	}
 };
