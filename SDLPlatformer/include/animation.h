@@ -14,6 +14,12 @@ public:
 		frameCount = 0;
 	}
 
+	/**
+	* @brief Initializes a new Animation object.
+	*
+	* @param frameCount -- The number of frames in the animation.
+	* @param length -- The total length of the animation.
+	*/
 	Animation(int frameCount, float length)
 	{
 		this->frameCount = frameCount;

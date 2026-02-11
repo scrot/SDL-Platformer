@@ -15,6 +15,9 @@ using namespace std;
 // Global constants
 const size_t LAYER_IDX_LEVEL = 0;
 const size_t LAYER_IDX_CHARACTERS = 1;
+const int MAP_ROWS = 5;
+const int MAP_COLS = 50;
+const int TILE_SIZE = 32;
 
 struct SDL_State
 {
@@ -107,6 +110,7 @@ void cleanup(SDL_State &state);
 bool initialize(SDL_State& state);
 void drawObject(const SDL_State& state, GameState& gs, GameObject& obj, float deltaTime);
 void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject& obj, float deltaTime);
+void createTiles(const SDL_State& state, GameState& gs, const Resources& res);
 
 int main(int argc, char *argv[])
 {
@@ -137,16 +141,7 @@ int main(int argc, char *argv[])
 	GameState gs;
 	GameObject player;
 
-	// Create player object
-	player.type = ObjectType::player;
-	player.texture = res.texIdle;
-	player.animations = res.playerAnims;
-	player.currentAnimation = res.ANIM_PLAYER_IDLE;
-	player.acceleration = glm::vec2(300, 0);
-	player.maxSpeedX = 100;
-	player.data.playerData = PlayerData();
-
-	gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+	createTiles(state, gs, res);
 
 	// Start the main game loop
 	while (isRunning)
@@ -380,4 +375,51 @@ void update(const SDL_State& state, GameState& gs, Resources& rs, GameObject &ob
 		// Add velocity to position
 		obj.position += obj.velocity * deltaTime;
 	}
+}
+
+void createTiles(const SDL_State& state, GameState& gs, const Resources& res)
+{
+	/*
+		1 -- Ground
+		2 -- Panel
+		3 -- Enemy
+		4 -- Player
+		5 -- Grass
+		6 -- Brick
+	*/
+	short map[MAP_ROWS][MAP_COLS] =
+	{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	};
+
+	for (int row = 0; row < MAP_ROWS; row++)
+		for (int col = 0; col < MAP_COLS; col++)
+		{
+			switch (map[row][col])
+			{
+				case 4: // Player
+				{
+					// Create player object
+					GameObject player;
+
+					player.position = glm::vec2(col * TILE_SIZE, 
+												state.logH - (MAP_ROWS - row) * TILE_SIZE);
+					player.type = ObjectType::player;
+					player.texture = res.texIdle;
+					player.animations = res.playerAnims;
+					player.currentAnimation = res.ANIM_PLAYER_IDLE;
+					player.acceleration = glm::vec2(300, 0);
+					player.maxSpeedX = 100;
+					player.data.playerData = PlayerData();
+
+					gs.layers[LAYER_IDX_CHARACTERS].push_back(player);
+
+					break;
+				}
+			}
+		}
 }
