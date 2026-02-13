@@ -52,6 +52,10 @@ struct Resources
 	SDL_Texture* texGround;
 	SDL_Texture* texPanel;
 	SDL_Texture* texSlide;
+	SDL_Texture* texBg1;
+	SDL_Texture* texBg2;
+	SDL_Texture* texBg3;
+	SDL_Texture* texBg4;
 
 	/* @brief Load the requested texture. 
 	* 
@@ -92,6 +96,10 @@ struct Resources
 		texGround = loadTexture(state.renderer, "assets/tiles/ground.png");
 		texPanel = loadTexture(state.renderer, "assets/tiles/panel.png");
 		texSlide = loadTexture(state.renderer, "assets/slide.png");
+		texBg1 = loadTexture(state.renderer, "assets/bg/bg_layer1.png");
+		texBg2 = loadTexture(state.renderer, "assets/bg/bg_layer2.png");
+		texBg3 = loadTexture(state.renderer, "assets/bg/bg_layer3.png");
+		texBg4 = loadTexture(state.renderer, "assets/bg/bg_layer4.png");
 	}
 
 	/**
@@ -112,6 +120,9 @@ struct GameState
 	std::array<std::vector<GameObject>, 2> layers;
 	int playerIndex;
 	SDL_FRect mapViewport;
+	float bg2Scroll;
+	float bg3Scroll;
+	float bg4Scroll;
 
 	GameState(const SDLState &state)
 	{
@@ -123,6 +134,10 @@ struct GameState
 			.w = static_cast<float>(state.logW),
 			.h = static_cast<float>(state.logH)
 		};
+
+		bg2Scroll = 0;
+		bg3Scroll = 0;
+		bg4Scroll = 0;
 	}
 
 	GameObject &player()
@@ -141,6 +156,8 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources& res, con
 					   const SDL_FRect& intersection, GameObject& objA, GameObject& objB, float deltaTime);
 void checkCollision(const SDLState& state, GameState& gs, Resources& res, GameObject& a, GameObject& b, float deltaTime);
 void handleKeyInput(const SDLState& state, GameState& gs, GameObject& obj, SDL_Scancode key, bool keyDown);
+void drawParallaxBackground(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity,
+	float& scrollPos, float scrollFactor, float deltaTime);
 
 int main(int argc, char *argv[])
 {
@@ -235,9 +252,13 @@ int main(int argc, char *argv[])
 		// Calculate viewport position
 		gs.mapViewport.x = (gs.player().position.x + TILE_SIZE / 2) - gs.mapViewport.w / 2;
 
-		// Set the background color and clear the back buffer
+		// Perform drawing commands
 		SDL_SetRenderDrawColor(state.renderer, 20, 10, 30, 255);
 		SDL_RenderClear(state.renderer);
+
+		// Draw background images
+		SDL_RenderTexture(state.renderer, res.texBg1, nullptr, nullptr);
+		drawParallaxBackground(state.renderer, res.texBg2, gs.player().velocity.x, gs.bg2Scroll, 0.3f, deltaTime);
 
 		// Draw all objects
 		for (auto &layer : gs.layers)
@@ -687,4 +708,26 @@ void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_S
 			}
 		}
 	}
+}
+
+void drawParallaxBackground(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity,
+	float& scrollPos, float scrollFactor, float deltaTime)
+{
+	scrollPos -= xVelocity * scrollFactor * deltaTime;
+
+	cout << "SCREAMING ANUS: " << -texture->w << endl;
+	cout << "DIARRHEA DRINKER: " << -texture->w << endl;
+
+	if (scrollPos < -texture->w)
+		scrollPos = 0;
+
+	SDL_FRect dst =
+	{
+		.x = scrollPos,
+		.y = 10,
+		.w = texture->w * 2.0f,
+		.h = static_cast<float>(texture->h)
+	};
+
+	SDL_RenderTextureTiled(renderer, texture, nullptr, 1, &dst);
 }
