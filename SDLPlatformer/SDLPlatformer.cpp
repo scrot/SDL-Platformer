@@ -40,6 +40,7 @@ struct Resources
 {
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation
+	const int ANIM_PLAYER_SLIDE = 2; // Index for sliding animation
 
 	std::vector<Animation> playerAnims;
 
@@ -50,6 +51,7 @@ struct Resources
 	SDL_Texture* texGrass;
 	SDL_Texture* texGround;
 	SDL_Texture* texPanel;
+	SDL_Texture* texSlide;
 
 	/* @brief Load the requested texture. 
 	* 
@@ -80,6 +82,7 @@ struct Resources
 		playerAnims.resize(5);	// There are 5 player animations, so we resize the vector to accomodate them.
 		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);	// There are 8 frames in the idle animation that lasts 1.6 seconds.
 		playerAnims[ANIM_PLAYER_RUNNING] = Animation(4, 0.5f); // 4 frames in running animation that lasts 0.5 seconds.
+		playerAnims[ANIM_PLAYER_SLIDE] = Animation(1, 1.0f); // 1 frame in sliding animation that lasts 1 second
 
 		// Load the animations
 		texIdle = loadTexture(state.renderer, "assets/idle.png");
@@ -88,6 +91,7 @@ struct Resources
 		texGrass = loadTexture(state.renderer, "assets/tiles/grass.png");
 		texGround = loadTexture(state.renderer, "assets/tiles/ground.png");
 		texPanel = loadTexture(state.renderer, "assets/tiles/panel.png");
+		texSlide = loadTexture(state.renderer, "assets/slide.png");
 	}
 
 	/**
@@ -334,7 +338,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 	};
 
 	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-	cout << "Y VELOCITY: " << obj.velocity.y << endl;
+	cout << "Y VELOCITY: " << obj.velocity.y << endl;	// Command to force jumping to work. Still need to figure out the root cause of the problem
 
 	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 }
@@ -401,8 +405,19 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 					obj.data.playerData.state = PlayerState::idle;
 				}
 
-				obj.texture = rs.texRunning;
-				obj.currentAnimation = rs.ANIM_PLAYER_RUNNING;
+				// Adding sliding when changing direction
+				if (obj.velocity.x * obj.direction < 0 && obj.grounded)
+				{
+					obj.texture = rs.texSlide;
+					obj.currentAnimation = rs.ANIM_PLAYER_SLIDE;
+				}
+				else
+				{
+					obj.texture = rs.texRunning;
+					obj.currentAnimation = rs.ANIM_PLAYER_RUNNING;
+				}
+
+				
 
 				break;
 			}
@@ -490,9 +505,9 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 	{
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
 
 	const auto createObject = [&state](int row, int col, SDL_Texture* tex, ObjectType type)
