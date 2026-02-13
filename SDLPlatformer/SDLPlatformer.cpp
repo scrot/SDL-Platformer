@@ -111,10 +111,18 @@ struct GameState
 {
 	std::array<std::vector<GameObject>, 2> layers;
 	int playerIndex;
+	SDL_FRect mapViewport;
 
-	GameState()
+	GameState(const SDLState &state)
 	{
 		playerIndex = -1;
+		mapViewport = SDL_FRect
+		{
+			.x = 0,
+			.y = 0,
+			.w = static_cast<float>(state.logW),
+			.h = static_cast<float>(state.logH)
+		};
 	}
 
 	GameObject &player()
@@ -160,7 +168,7 @@ int main(int argc, char *argv[])
 	
 
 	// Setup game data here
-	GameState gs;
+	GameState gs(state);
 	GameObject player;
 
 	createTiles(state, gs, res);
@@ -223,6 +231,9 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
+
+		// Calculate viewport position
+		gs.mapViewport.x = (gs.player().position.x + TILE_SIZE / 2) - gs.mapViewport.w / 2;
 
 		// Set the background color and clear the back buffer
 		SDL_SetRenderDrawColor(state.renderer, 20, 10, 30, 255);
@@ -331,7 +342,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 	// The destination rectangle (position on the screen) that we want to render to
 	SDL_FRect dst
 	{
-		.x = obj.position.x,
+		.x = obj.position.x - gs.mapViewport.x,
 		.y = obj.position.y,
 		.w = spriteSize,
 		.h = spriteSize
