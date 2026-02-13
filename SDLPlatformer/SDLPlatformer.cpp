@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
 				case SDL_EVENT_KEY_DOWN:
 				{
 					handleKeyInput(state, gs, gs.player(), event.key.scancode, true);
+
 					break;
 				}
 				case SDL_EVENT_KEY_UP:
@@ -333,6 +334,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 	};
 
 	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+	cout << "Y VELOCITY: " << obj.velocity.y << endl;
 
 	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 }
@@ -428,7 +430,7 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 	obj.position += obj.velocity * deltaTime;
 
 	// Handle collision detection
-	bool foundGround = true;
+	bool foundGround = false;
 
 	for(auto &layer : gs.layers)
 	{
@@ -488,9 +490,9 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 	{
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
 
 	const auto createObject = [&state](int row, int col, SDL_Texture* tex, ObjectType type)
@@ -645,7 +647,6 @@ void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_S
 				{
 					obj.data.playerData.state = PlayerState::jumping;
 					obj.velocity.y += JUMP_FORCE;
-					// obj.grounded = false;
 				}
 				break;
 			}
@@ -655,8 +656,6 @@ void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_S
 				{
 					obj.data.playerData.state = PlayerState::jumping;
 					obj.velocity.y += JUMP_FORCE;
-
-					// obj.grounded = false;
 				}
 				break;
 			}
