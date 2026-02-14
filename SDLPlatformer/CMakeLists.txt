@@ -6,7 +6,7 @@ find_package(SDL3_image REQUIRED)
 find_package(GLM REQUIRED)
 
 # Add source to this project's executable.
-add_executable (SDLPlatformer "SDLPlatformer.cpp" "include/SDLPlatformer.h" "include/timer.h" "include/animation.h" "include/gameobject.h" "include/resources.h" "include/sdlstate.h")
+add_executable (SDLPlatformer "SDLPlatformer.cpp" "include/SDLPlatformer.h" "include/timer.h" "include/animation.h" "include/gameobject.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET SDLPlatformer PROPERTY CXX_STANDARD 20)
