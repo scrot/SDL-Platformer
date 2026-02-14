@@ -6,6 +6,9 @@
 struct GameState
 {
 	std::array<std::vector<GameObject>, 2> layers;
+	std::vector<GameObject> backgroundTiles;
+	std::vector<GameObject> foregroundTiles;
+
 	int playerIndex;
 	SDL_FRect mapViewport;
 	float bg2Scroll;
