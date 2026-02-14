@@ -10,53 +10,13 @@
 
 #include "include/SDLPlatformer.h"
 #include "include/gameobject.h"
+#include "include/gamestate.h"
 #include "include/resources.h"
 #include "include/sdlstate.h"
 
 using namespace std;
 
-// Global constants
-const size_t LAYER_IDX_LEVEL = 0;
-const size_t LAYER_IDX_CHARACTERS = 1;
-const int MAP_ROWS = 5;
-const int MAP_COLS = 50;
-const int TILE_SIZE = 32;
 
-
-
-
-
-// Streucture to hold all gane info, including game objects, player index, etc.
-struct GameState
-{
-	std::array<std::vector<GameObject>, 2> layers;
-	int playerIndex;
-	SDL_FRect mapViewport;
-	float bg2Scroll;
-	float bg3Scroll;
-	float bg4Scroll;
-
-	GameState(const SDLState &state)
-	{
-		playerIndex = -1;
-		mapViewport = SDL_FRect
-		{
-			.x = 0,
-			.y = 0,
-			.w = static_cast<float>(state.logW),
-			.h = static_cast<float>(state.logH)
-		};
-
-		bg2Scroll = 0;
-		bg3Scroll = 0;
-		bg4Scroll = 0;
-	}
-
-	GameObject &player()
-	{
-		return layers[LAYER_IDX_CHARACTERS][playerIndex];
-	}
-};
 
 // Function prototypes
 void cleanup(SDLState &state);
@@ -129,7 +89,10 @@ int main(int argc, char *argv[])
 				}
 				case SDL_EVENT_KEY_DOWN:
 				{
-					handleKeyInput(state, gs, gs.player(), event.key.scancode, true);
+					if (event.key.scancode == SDL_SCANCODE_ESCAPE)
+						isRunning = false;
+					else
+						handleKeyInput(state, gs, gs.player(), event.key.scancode, true);
 
 					break;
 				}
@@ -170,6 +133,8 @@ int main(int argc, char *argv[])
 
 		// Draw background images
 		SDL_RenderTexture(state.renderer, res.texBg1, nullptr, nullptr);
+		drawParallaxBackground(state.renderer, res.texBg4, gs.player().velocity.x, gs.bg4Scroll, 0.075f, deltaTime);
+		drawParallaxBackground(state.renderer, res.texBg3, gs.player().velocity.x, gs.bg3Scroll, 0.15f, deltaTime);
 		drawParallaxBackground(state.renderer, res.texBg2, gs.player().velocity.x, gs.bg2Scroll, 0.3f, deltaTime);
 
 		// Draw all objects
