@@ -27,6 +27,8 @@ struct Resources
 	SDL_Texture* texBg2;
 	SDL_Texture* texBg3;
 	SDL_Texture* texBg4;
+	SDL_Texture* texBullet;
+	SDL_Texture* texBulletHit;
 
 	/* @brief Load the requested texture.
 	*
@@ -71,6 +73,8 @@ struct Resources
 		texBg2 = loadTexture(state.renderer, "assets/bg/bg_layer2.png");
 		texBg3 = loadTexture(state.renderer, "assets/bg/bg_layer3.png");
 		texBg4 = loadTexture(state.renderer, "assets/bg/bg_layer4.png");
+		texBullet = loadTexture(state.renderer, "assets/bullet.png");
+		texBulletHit = loadTexture(state.renderer, "assets/bullethit.png");
 	}
 
 	/**
