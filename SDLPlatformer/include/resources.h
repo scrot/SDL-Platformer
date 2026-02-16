@@ -12,8 +12,11 @@ struct Resources
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation
 	const int ANIM_PLAYER_SLIDE = 2; // Index for sliding animation
+	const int ANIM_BULLET_MOVING = 0; // Index for bullet moving animation
+	const int ANIM_BULLET_HIT = 1; // Index for bullet hit animation
 
 	std::vector<Animation> playerAnims;
+	std::vector<Animation> bulletAnims;
 
 	std::vector<SDL_Texture*> textures;
 	SDL_Texture* texIdle;
@@ -60,6 +63,10 @@ struct Resources
 		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);	// There are 8 frames in the idle animation that lasts 1.6 seconds.
 		playerAnims[ANIM_PLAYER_RUNNING] = Animation(4, 0.5f); // 4 frames in running animation that lasts 0.5 seconds.
 		playerAnims[ANIM_PLAYER_SLIDE] = Animation(1, 1.0f); // 1 frame in sliding animation that lasts 1 second
+
+		bulletAnims.resize(2);
+		bulletAnims[ANIM_BULLET_MOVING] = Animation(4, 0.05f);
+		bulletAnims[ANIM_BULLET_HIT] = Animation(4, 0.15f);
 
 		// Load the animations
 		texIdle = loadTexture(state.renderer, "assets/idle.png");

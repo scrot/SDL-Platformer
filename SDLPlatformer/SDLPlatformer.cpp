@@ -21,7 +21,7 @@ using namespace std;
 // Function prototypes
 void cleanup(SDLState &state);
 bool initialize(SDLState& state);
-void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float deltaTime);
+void drawObject(const SDLState& state, GameState& gs, GameObject& obj, float width, float height, float deltaTime);
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject& obj, float deltaTime);
 void createTiles(const SDLState& state, GameState& gs, const Resources& res);
 void collisionResponse(const SDLState& state, GameState& gs, Resources& res, const SDL_FRect& rectA, const SDL_FRect& rectB,
@@ -124,6 +124,17 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// Update bullets
+		for (GameObject& bullet : gs.bullets)
+		{
+			update(state, gs, res, bullet, deltaTime);
+
+			if (bullet.currentAnimation != -1)
+			{
+				bullet.animations[bullet.currentAnimation].step(deltaTime);
+			}
+		}
+
 		// Calculate viewport position
 		gs.mapViewport.x = (gs.player().position.x + TILE_SIZE / 2) - gs.mapViewport.w / 2;
 
@@ -156,8 +167,14 @@ int main(int argc, char *argv[])
 		{
 			for (GameObject &obj : layer)
 			{
-				drawObject(state, gs, obj, deltaTime);
+				drawObject(state, gs, obj, TILE_SIZE, TILE_SIZE, deltaTime);
 			}
+		}
+
+		// Draw bullets
+		for (GameObject& bullet : gs.bullets)
+		{
+			drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);
 		}
 
 		// Draw foreground tiles
@@ -253,18 +270,17 @@ bool initialize(SDLState& state)
 
 }
 
-void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float deltaTime)
+void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float width, float height, float deltaTime)
 { 
-	const float spriteSize = 32;
-	float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * spriteSize : 0;
+	float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * width : 0;
 
 	// The source rectangle (animation frame) that we want o render from the sprite sheet
 	SDL_FRect src
 	{
 		.x = srcX,
 		.y = 0,
-		.w = spriteSize,
-		.h = spriteSize
+		.w = width,
+		.h = height
 	};
 
 	// The destination rectangle (position on the screen) that we want to render to
@@ -272,8 +288,8 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float del
 	{
 		.x = obj.position.x - gs.mapViewport.x,
 		.y = obj.position.y,
-		.w = spriteSize,
-		.h = spriteSize
+		.w = width,
+		.h = height
 	};
 
 	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
@@ -323,6 +339,28 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						obj.velocity.x = 0;
 					else
 						obj.velocity.x += amount;
+				}
+
+				if (state.keys[SDL_SCANCODE_J])
+				{
+					// Spawn bullets
+					GameObject bullet;
+
+					bullet.type = ObjectType::bullet;
+					bullet.direction = gs.player().direction;
+					bullet.texture = rs.texBullet;
+					bullet.currentAnimation = rs.ANIM_BULLET_MOVING;
+					bullet.collider = SDL_FRect
+					{
+						.x = 0,
+						.y = 0,
+						.w = static_cast<float>(rs.texBullet->w),
+						.h = static_cast<float>(rs.texBullet->h)
+					};
+					bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
+					bullet.animations = rs.bulletAnims;
+					bullet.position = obj.position;
+					gs.bullets.push_back(bullet);
 				}
 
 				obj.texture = rs.texIdle;
