@@ -12,6 +12,8 @@ struct Resources
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation
 	const int ANIM_PLAYER_SLIDE = 2; // Index for sliding animation
+	const int ANIM_PLAYER_SHOOT = 3; // Index for player shooting animation
+	const int ANIM_PLAYER_SLIDESHOOT = 4;	// Index for player sliding/shooting animation
 	const int ANIM_BULLET_MOVING = 0; // Index for bullet moving animation
 	const int ANIM_BULLET_HIT = 1; // Index for bullet hit animation
 
@@ -32,6 +34,9 @@ struct Resources
 	SDL_Texture* texBg4;
 	SDL_Texture* texBullet;
 	SDL_Texture* texBulletHit;
+	SDL_Texture* texShoot;
+	SDL_Texture* texRunShoot;
+	SDL_Texture* texSlideShoot;
 
 	/* @brief Load the requested texture.
 	*
@@ -63,6 +68,8 @@ struct Resources
 		playerAnims[ANIM_PLAYER_IDLE] = Animation(8, 1.6f);	// There are 8 frames in the idle animation that lasts 1.6 seconds.
 		playerAnims[ANIM_PLAYER_RUNNING] = Animation(4, 0.5f); // 4 frames in running animation that lasts 0.5 seconds.
 		playerAnims[ANIM_PLAYER_SLIDE] = Animation(1, 1.0f); // 1 frame in sliding animation that lasts 1 second
+		playerAnims[ANIM_PLAYER_SHOOT] = Animation(4, 0.5f); // 4 frames in shooting that lasts 0.5 seconds
+		playerAnims[ANIM_PLAYER_SLIDESHOOT] = Animation(4, 0.5f); // 4 frames in sliding/shooting animation that lasts 0.5 seconds
 
 		bulletAnims.resize(2);
 		bulletAnims[ANIM_BULLET_MOVING] = Animation(4, 0.05f);
@@ -82,6 +89,9 @@ struct Resources
 		texBg4 = loadTexture(state.renderer, "assets/bg/bg_layer4.png");
 		texBullet = loadTexture(state.renderer, "assets/bullet.png");
 		texBulletHit = loadTexture(state.renderer, "assets/bullethit.png");
+		texShoot = loadTexture(state.renderer, "assets/shoot.png");
+		texRunShoot = loadTexture(state.renderer, "assets/shoot_run.png");
+		texSlideShoot = loadTexture(state.renderer, "assets/slide_shoot.png");
 	}
 
 	/**

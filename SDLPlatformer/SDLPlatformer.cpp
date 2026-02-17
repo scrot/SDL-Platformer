@@ -194,7 +194,8 @@ int main(int argc, char *argv[])
 		// Display debug info	
 		SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
 		SDL_RenderDebugText(state.renderer, 5, 5, 
-			std::format("State: {}", static_cast<int>(gs.player().data.playerData.state)).c_str());
+			std::format("S: {}, B: {} G: {}", 
+				static_cast<int>(gs.player().data.playerData.state), gs.bullets.size(), gs.player().grounded).c_str());
 
 		
 		// Swap buffers and present the back buffer
@@ -325,6 +326,56 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 		Timer& weaponTimer = obj.data.playerData.weaponTimer;
 		weaponTimer.step(deltaTime);
 
+		const auto handleShooting = [&state, &gs, &rs, &obj, &weaponTimer]
+									(SDL_Texture *tex, SDL_Texture *shootTex, int animIndex, int shootAnimIndex)
+		{
+			if (state.keys[SDL_SCANCODE_J])
+			{
+				// Set shooting texture/animation
+				obj.texture = shootTex;
+				obj.currentAnimation = shootAnimIndex;
+
+				if (weaponTimer.isTimeout())
+				{
+					weaponTimer.reset();
+
+					// Spawn bullets
+					GameObject bullet;
+
+					bullet.type = ObjectType::bullet;
+					bullet.direction = gs.player().direction;
+					bullet.texture = rs.texBullet;
+					bullet.currentAnimation = rs.ANIM_BULLET_MOVING;
+					bullet.collider = SDL_FRect
+					{
+						.x = 0,
+						.y = 0,
+						.w = static_cast<float>(rs.texBullet->w),
+						.h = static_cast<float>(rs.texBullet->h)
+					};
+					bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
+					bullet.animations = rs.bulletAnims;
+
+					// Adjust bullet start position
+					const float left = 4;
+					const float right = 24;
+					const float t = (obj.direction + 1) / 2.0f;
+					const float xOffset = (left + right) * t; // LERP between left and right based on direction
+
+					bullet.position = glm::vec2(
+						obj.position.x + xOffset,
+						obj.position.y + (TILE_SIZE / 2) + 1
+					);
+					gs.bullets.push_back(bullet);
+				}
+			}
+			else
+			{
+				obj.texture = tex;
+				obj.currentAnimation = shootAnimIndex;
+			}
+		};
+
 		switch (obj.data.playerData.state)
 		{
 			case PlayerState::idle:
@@ -346,52 +397,13 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						obj.velocity.x += amount;
 				}
 
-				if (state.keys[SDL_SCANCODE_J])
-				{
-					if (weaponTimer.isTimeout())
-					{
-						weaponTimer.reset();
-
-						// Spawn bullets
-						GameObject bullet;
-
-						bullet.type = ObjectType::bullet;
-						bullet.direction = gs.player().direction;
-						bullet.texture = rs.texBullet;
-						bullet.currentAnimation = rs.ANIM_BULLET_MOVING;
-						bullet.collider = SDL_FRect
-						{
-							.x = 0,
-							.y = 0,
-							.w = static_cast<float>(rs.texBullet->w),
-							.h = static_cast<float>(rs.texBullet->h)
-						};
-						bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
-						bullet.animations = rs.bulletAnims;
-
-						// Adjust bullet start position
-						const float left = 4;
-						const float right = 24;
-						const float t = (obj.direction + 1) / 2.0f;
-						const float xOffset = (left + right) * t; // LERP between left and right based on direction
-
-						bullet.position = glm::vec2(
-							obj.position.x + xOffset,
-							obj.position.y + (TILE_SIZE / 2) + 1
-						);
-						gs.bullets.push_back(bullet);
-					}
-				}
-
-				obj.texture = rs.texIdle;
-				obj.currentAnimation = rs.ANIM_PLAYER_IDLE;
+				handleShooting(rs.texIdle, rs.texShoot, rs.ANIM_PLAYER_IDLE, rs.ANIM_PLAYER_SHOOT);
 
 				break;
 			}
 			case PlayerState::jumping:
 			{
-				obj.texture = rs.texRunning;
-				obj.currentAnimation = rs.ANIM_PLAYER_RUNNING;
+				handleShooting(rs.texRunning, rs.texRunShoot, rs.ANIM_PLAYER_RUNNING, rs.ANIM_PLAYER_RUNNING);
 
 				break;
 			}
@@ -405,13 +417,13 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 				// Adding sliding when changing direction
 				if (obj.velocity.x * obj.direction < 0 && obj.grounded)
 				{
+					handleShooting(rs.texSlide, rs.texSlideShoot, rs.ANIM_PLAYER_SLIDE, rs.ANIM_PLAYER_SLIDESHOOT);
 					obj.texture = rs.texSlide;
 					obj.currentAnimation = rs.ANIM_PLAYER_SLIDE;
 				}
 				else
 				{
-					obj.texture = rs.texRunning;
-					obj.currentAnimation = rs.ANIM_PLAYER_RUNNING;
+					handleShooting(rs.texRunning, rs.texRunShoot, rs.ANIM_PLAYER_RUNNING, rs.ANIM_PLAYER_RUNNING);
 				}
 
 				
