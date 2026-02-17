@@ -320,6 +320,11 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 		if (currentDirection)
 			obj.direction = currentDirection;
 
+		// Get a reference to weapon's timer without having to spell out
+		// obj.data.playerData.weaponTimer each time
+		Timer& weaponTimer = obj.data.playerData.weaponTimer;
+		weaponTimer.step(deltaTime);
+
 		switch (obj.data.playerData.state)
 		{
 			case PlayerState::idle:
@@ -343,24 +348,39 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 
 				if (state.keys[SDL_SCANCODE_J])
 				{
-					// Spawn bullets
-					GameObject bullet;
-
-					bullet.type = ObjectType::bullet;
-					bullet.direction = gs.player().direction;
-					bullet.texture = rs.texBullet;
-					bullet.currentAnimation = rs.ANIM_BULLET_MOVING;
-					bullet.collider = SDL_FRect
+					if (weaponTimer.isTimeout())
 					{
-						.x = 0,
-						.y = 0,
-						.w = static_cast<float>(rs.texBullet->w),
-						.h = static_cast<float>(rs.texBullet->h)
-					};
-					bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
-					bullet.animations = rs.bulletAnims;
-					bullet.position = obj.position;
-					gs.bullets.push_back(bullet);
+						weaponTimer.reset();
+
+						// Spawn bullets
+						GameObject bullet;
+
+						bullet.type = ObjectType::bullet;
+						bullet.direction = gs.player().direction;
+						bullet.texture = rs.texBullet;
+						bullet.currentAnimation = rs.ANIM_BULLET_MOVING;
+						bullet.collider = SDL_FRect
+						{
+							.x = 0,
+							.y = 0,
+							.w = static_cast<float>(rs.texBullet->w),
+							.h = static_cast<float>(rs.texBullet->h)
+						};
+						bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
+						bullet.animations = rs.bulletAnims;
+
+						// Adjust bullet start position
+						const float left = 4;
+						const float right = 24;
+						const float t = (obj.direction + 1) / 2.0f;
+						const float xOffset = (left + right) * t; // LERP between left and right based on direction
+
+						bullet.position = glm::vec2(
+							obj.position.x + xOffset,
+							obj.position.y + (TILE_SIZE / 2) + 1
+						);
+						gs.bullets.push_back(bullet);
+					}
 				}
 
 				obj.texture = rs.texIdle;
