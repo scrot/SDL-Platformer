@@ -15,6 +15,7 @@ struct GameState
 	float bg2Scroll;
 	float bg3Scroll;
 	float bg4Scroll;
+	bool debugMode;
 
 	GameState(const SDLState& state)
 	{
@@ -30,6 +31,8 @@ struct GameState
 		bg2Scroll = 0;
 		bg3Scroll = 0;
 		bg4Scroll = 0;
+
+		debugMode = false;
 	}
 
 	GameObject& player()

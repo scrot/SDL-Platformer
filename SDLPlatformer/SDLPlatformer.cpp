@@ -99,6 +99,10 @@ int main(int argc, char *argv[])
 				case SDL_EVENT_KEY_UP:
 				{
 					handleKeyInput(state, gs, gs.player(), event.key.scancode, false);
+
+					if (event.key.scancode == SDL_SCANCODE_F5)
+						gs.debugMode = !gs.debugMode;
+
 					break;
 				}
 				default:
@@ -191,11 +195,15 @@ int main(int argc, char *argv[])
 			SDL_RenderTexture(state.renderer, obj.texture, nullptr, &dst);
 		}
 
-		// Display debug info	
-		SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
-		SDL_RenderDebugText(state.renderer, 5, 5, 
-			std::format("S: {}, B: {} G: {}", 
-				static_cast<int>(gs.player().data.playerData.state), gs.bullets.size(), gs.player().grounded).c_str());
+		if (gs.debugMode)
+		{
+			// Display debug info	
+			SDL_SetRenderDrawColor(state.renderer, 255, 255, 255, 255);
+			SDL_RenderDebugText(state.renderer, 5, 5,
+					std::format("S: {}, B: {} G: {}",
+					static_cast<int>(gs.player().data.playerData.state), gs.bullets.size(), gs.player().grounded).c_str());
+		}
+		
 
 		
 		// Swap buffers and present the back buffer
@@ -297,6 +305,23 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 	cout << "Y VELOCITY: " << obj.velocity.y << endl;	// Command to force jumping to work. Still need to figure out the root cause of the problem
 
 	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+
+	// Print out debug stuff
+	if (gs.debugMode)
+	{
+		SDL_FRect rectA
+		{
+			.x = obj.position.x + obj.collider.x - gs.mapViewport.x,
+			.y = obj.position.y + obj.collider.y,
+			.w = obj.collider.w,
+			.h = obj.collider.h
+		};
+
+		SDL_SetRenderDrawBlendMode(state.renderer, SDL_BLENDMODE_BLEND);
+		SDL_SetRenderDrawColor(state.renderer, 255, 0, 0, 150);
+		SDL_RenderFillRect(state.renderer, &rectA);
+		SDL_SetRenderDrawBlendMode(state.renderer, SDL_BLENDMODE_NONE);
+	}
 }
 
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
