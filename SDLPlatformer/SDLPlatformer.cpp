@@ -178,7 +178,8 @@ int main(int argc, char *argv[])
 		// Draw bullets
 		for (GameObject& bullet : gs.bullets)
 		{
-			drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);
+			if (bullet.data.bulletData.state != BulletState::inactive)
+				drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);
 		}
 
 		// Draw foreground tiles
@@ -365,6 +366,8 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 
 					// Spawn bullets
 					GameObject bullet;
+					
+					bullet.data.bulletData = BulletData();
 
 					bullet.type = ObjectType::bullet;
 					bullet.direction = gs.player().direction;
@@ -482,11 +485,27 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 	else
 		if (obj.type == ObjectType::bullet)
 		{
-			if (obj.position.x - gs.mapViewport.x < 0 || // Left side
-					obj.position.x - gs.mapViewport.x > state.logW || // Right side
-					obj.position.y - gs.mapViewport.y < 0 ||
-					obj.position.y - gs.mapViewport.y > state.logH)
-				obj.data.bulletData.state = BulletState::inactive;
+			switch (obj.data.bulletData.state)
+			{
+				case BulletState::moving:
+				{
+					if (obj.position.x - gs.mapViewport.x < 0 || // Left side
+							obj.position.x - gs.mapViewport.x > state.logW || // Right side
+							obj.position.y - gs.mapViewport.y < 0 ||
+							obj.position.y - gs.mapViewport.y > state.logH)
+						obj.data.bulletData.state = BulletState::inactive;
+
+					break;
+				}
+				case BulletState::colliding:
+				{
+					if (obj.animations[obj.currentAnimation].isDone())
+						obj.data.bulletData.state = BulletState::inactive;
+
+					break;
+				}
+			}
+			
 		}
 			
 
@@ -703,6 +722,44 @@ void checkCollision(const SDLState& state, GameState& gs, Resources &res, GameOb
 void collisionResponse(const SDLState& state, GameState& gs, Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, 
 						const SDL_FRect& intersection, GameObject &objA, GameObject &objB, float deltaTime)
 {
+	const auto genericResponse = [&]()
+	{
+		if (intersection.w < intersection.h)
+		{
+			// Horizontal collision, resolve on the X axis
+			if (objA.velocity.x > 0)
+			{
+				// Moving right, push back to the left
+				objA.position.x -= intersection.w;
+			}
+			else
+				if (objA.velocity.x < 0)
+				{
+					// Moving left, push back to the right
+					objA.position.x += intersection.w;
+				}
+
+			objA.velocity.x = 0;	// Stop horizontal movement on collision
+		}
+		else
+		{
+			// Vertical collision, resolve on the Y axis
+			if (objA.velocity.y > 0)
+			{
+				// Moving right, push back to the left
+				objA.position.y -= intersection.h;
+			}
+			else
+				if (objA.velocity.x < 0)
+				{
+					// Moving left, push back to the right
+					objA.position.y += intersection.h;
+				}
+
+			objA.velocity.y = 0;	// Stop vertical movement on collision
+		}
+	};
+
 	// Collision response logic goes here
 	// Object we are checking
 	if (objA.type == ObjectType::player)
@@ -712,44 +769,27 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 		{
 			case ObjectType::level:
 			{
-				if (intersection.w < intersection.h)
-				{
-					// Horizontal collision, resolve on the X axis
-					if (objA.velocity.x > 0)
-					{
-						// Moving right, push back to the left
-						objA.position.x -= intersection.w;
-					}
-					else 
-						if (objA.velocity.x < 0)
-						{
-							// Moving left, push back to the right
-							objA.position.x += intersection.w;
-						}
-
-					objA.velocity.x = 0;	// Stop horizontal movement on collision
-				}
-				else
-				{
-					// Vertical collision, resolve on the Y axis
-					if (objA.velocity.y > 0)
-					{
-						// Moving right, push back to the left
-						objA.position.y -= intersection.h;
-					}
-					else 
-						if (objA.velocity.x < 0)
-							{
-								// Moving left, push back to the right
-								objA.position.y += intersection.h;
-							}
-
-					objA.velocity.y = 0;	// Stop vertical movement on collision
-				}
+				genericResponse();
 				break;
 			}
 		}
 	}
+	else
+		if (objA.type == ObjectType::bullet)
+		{
+			switch (objA.data.bulletData.state)
+			{
+				case BulletState::moving:
+				{
+					genericResponse();
+					objA.data.bulletData.state = BulletState::colliding;
+					objA.texture = res.texBulletHit;
+					objA.currentAnimation = res.ANIM_BULLET_HIT;
+
+					break;
+				}
+			}
+		}
 }
 
 void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_Scancode key, bool keyDown)

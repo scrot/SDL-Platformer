@@ -45,4 +45,9 @@ public:
 	{
 		return timer.getTime();
 	}
+
+	const bool isDone()
+	{
+		return timer.isTimeout();
+	}
 };
