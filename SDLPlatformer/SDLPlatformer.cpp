@@ -326,7 +326,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
 {
-	if (obj.dynamic)
+	if (obj.dynamic && !obj.grounded)
 	{
 		// Add gravity
 		obj.velocity += glm::vec2(0, 500) * deltaTime;
@@ -489,26 +489,31 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 			{
 				checkCollision(state, gs, rs, obj, other, deltaTime);
 
-				// Grounded sensor
-				SDL_FRect sensor
+				if (other.type == ObjectType::level)
 				{
-					.x = obj.position.x + obj.collider.x,
-					.y = obj.position.y + obj.collider.y + obj.collider.h,
-					.w = obj.collider.w,
-					.h = 1
-				};
+					// Grounded sensor
+					SDL_FRect sensor
+					{
+						.x = obj.position.x + obj.collider.x,
+						.y = obj.position.y + obj.collider.y + obj.collider.h,
+						.w = obj.collider.w,
+						.h = 1
+					};
 
-				SDL_FRect ground
-				{
-					.x = other.position.x + other.collider.x,
-					.y = other.position.y + other.collider.y,
-					.w = other.collider.w,
-					.h = other.collider.h
-				};
+					SDL_FRect ground
+					{
+						.x = other.position.x + other.collider.x,
+						.y = other.position.y + other.collider.y,
+						.w = other.collider.w,
+						.h = other.collider.h
+					};
 
-				if (SDL_HasRectIntersectionFloat(&sensor, &ground))
-				{
-					foundGround = true;
+					SDL_FRect intersection = { 0 };
+
+					if (SDL_GetRectIntersectionFloat(&sensor, &ground, &intersection))
+					{
+						foundGround = true;
+					}
 				}
 			}
 		}
