@@ -326,6 +326,8 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
 {
+	float currentDirection = 0.0f;
+
 	if (obj.dynamic && !obj.grounded)
 	{
 		// Add gravity
@@ -334,17 +336,14 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 	
 
 	if (obj.type == ObjectType::player)
-	{
-		float currentDirection = 0.0f;
-
+	{		
 		if (state.keys[SDL_SCANCODE_A] || state.keys[SDL_SCANCODE_LEFT])
 			currentDirection += -1.0f;
 
 		if (state.keys[SDL_SCANCODE_D] || state.keys[SDL_SCANCODE_RIGHT])
 			currentDirection += 1.0f;
 
-		if (currentDirection)
-			obj.direction = currentDirection;
+		
 
 		// Get a reference to weapon's timer without having to spell out
 		// obj.data.playerData.weaponTimer each time
@@ -379,6 +378,7 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						.h = static_cast<float>(rs.texBullet->h)
 					};
 					bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
+					bullet.maxSpeedX = 1000.0f;
 					bullet.animations = rs.bulletAnims;
 
 					// Adjust bullet start position
@@ -391,7 +391,23 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						obj.position.x + xOffset,
 						obj.position.y + (TILE_SIZE / 2) + 1
 					);
-					gs.bullets.push_back(bullet);
+
+					// Check for inactive bullets and replace them
+					bool foundInactive = false;
+
+					for (int i = 0; i < gs.bullets.size() && !foundInactive; i++)
+					{
+						if (gs.bullets[i].data.bulletData.state == BulletState::inactive)
+						{
+							foundInactive = true;
+							gs.bullets[i] = bullet;
+						}
+							
+					}
+
+					// If no inactive slot is found, add new bullet to vector
+					if (!foundInactive)
+						gs.bullets.push_back(bullet);
 				}
 			}
 			else
@@ -462,17 +478,28 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 			default:
 				break;
 		}
-
-		// Add acceleration to velocity
-		obj.velocity += currentDirection * obj.acceleration * deltaTime;
-
-		// Clamp velocity to max speed
-		if (std::abs(obj.velocity.x) > obj.maxSpeedX)
+	}
+	else
+		if (obj.type == ObjectType::bullet)
 		{
-			obj.velocity.x = obj.direction * obj.maxSpeedX;
+			if (obj.position.x - gs.mapViewport.x < 0 || // Left side
+					obj.position.x - gs.mapViewport.x > state.logW || // Right side
+					obj.position.y - gs.mapViewport.y < 0 ||
+					obj.position.y - gs.mapViewport.y > state.logH)
+				obj.data.bulletData.state = BulletState::inactive;
 		}
+			
 
-		
+	if (currentDirection)
+		obj.direction = currentDirection;
+
+	// Add acceleration to velocity
+	obj.velocity += currentDirection * obj.acceleration * deltaTime;
+
+	// Clamp velocity to max speed
+	if (std::abs(obj.velocity.x) > obj.maxSpeedX)
+	{
+		obj.velocity.x = obj.direction * obj.maxSpeedX;
 	}
 
 	// Add velocity to position
