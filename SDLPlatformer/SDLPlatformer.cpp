@@ -857,7 +857,6 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 			{
 				if (objB.data.enemyData.state != EnemyState::dead)
 					objA.velocity = glm::vec2(100, 0) * -objA.direction;
-				}
 
 				break;
 			}
