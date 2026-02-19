@@ -16,9 +16,13 @@ struct Resources
 	const int ANIM_PLAYER_SLIDESHOOT = 4;	// Index for player sliding/shooting animation
 	const int ANIM_BULLET_MOVING = 0; // Index for bullet moving animation
 	const int ANIM_BULLET_HIT = 1; // Index for bullet hit animation
+	const int ANIM_ENEMY = 0;
+	const int ANIM_ENEMY_HIT = 1;
+	const int ANIM_ENEMY_DIE = 2;
 
 	std::vector<Animation> playerAnims;
 	std::vector<Animation> bulletAnims;
+	std::vector<Animation> enemyAnims;
 
 	std::vector<SDL_Texture*> textures;
 	SDL_Texture* texIdle;
@@ -37,6 +41,9 @@ struct Resources
 	SDL_Texture* texShoot;
 	SDL_Texture* texRunShoot;
 	SDL_Texture* texSlideShoot;
+	SDL_Texture* texEnemy;
+	SDL_Texture* texEnemyHit;
+	SDL_Texture* texEnemyDie;
 
 	/* @brief Load the requested texture.
 	*
@@ -75,6 +82,11 @@ struct Resources
 		bulletAnims[ANIM_BULLET_MOVING] = Animation(4, 0.05f);
 		bulletAnims[ANIM_BULLET_HIT] = Animation(4, 0.15f);
 
+		enemyAnims.resize(3);
+		enemyAnims[ANIM_ENEMY] = Animation(8, 1.0f);
+		enemyAnims[ANIM_ENEMY_HIT] = Animation(8, 1.0f);
+		enemyAnims[ANIM_ENEMY_DIE] = Animation(18, 2.0f);
+
 		// Load the animations
 		texIdle = loadTexture(state.renderer, "assets/idle.png");
 		texRunning = loadTexture(state.renderer, "assets/run.png");
@@ -92,6 +104,9 @@ struct Resources
 		texShoot = loadTexture(state.renderer, "assets/shoot.png");
 		texRunShoot = loadTexture(state.renderer, "assets/shoot_run.png");
 		texSlideShoot = loadTexture(state.renderer, "assets/slide_shoot.png");
+		texEnemy = loadTexture(state.renderer, "assets/enemy.png");
+		texEnemyHit = loadTexture(state.renderer, "assets/enemy_hit.png");
+		texEnemyDie = loadTexture(state.renderer, "assets/enemy_die.png");
 	}
 
 	/**

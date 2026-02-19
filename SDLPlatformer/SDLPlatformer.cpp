@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 		for (GameObject& bullet : gs.bullets)
 		{
 			if (bullet.data.bulletData.state != BulletState::inactive)
-				drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);
+				drawObject(state, gs, bullet, bullet.collider.w, bullet.collider.h, deltaTime);	
 		}
 
 		// Draw foreground tiles
@@ -303,7 +303,7 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 	};
 
 	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-	cout << "Y VELOCITY: " << obj.velocity.y << endl;	// Command to force jumping to work. Still need to figure out the root cause of the problem
+	// cout << "Y VELOCITY: " << obj.velocity.y << endl;	// Command to force jumping to work. Still need to figure out the root cause of the problem
 
 	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
 
@@ -408,8 +408,7 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						{
 							foundInactive = true;
 							gs.bullets[i] = bullet;
-						}
-							
+						}	
 					}
 
 					// If no inactive slot is found, add new bullet to vector
@@ -595,7 +594,7 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	};
 
@@ -646,6 +645,16 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 					{
 						GameObject ground = createObject(row, col, res.texPanel, ObjectType::level);
 						gs.layers[LAYER_IDX_LEVEL].push_back(ground);
+						break;
+					}
+					case 3: // Enemy
+					{
+						GameObject enemy = createObject(row, col, res.texEnemy, ObjectType::enemy);
+
+						enemy.currentAnimation = res.ANIM_ENEMY;
+						enemy.animations = res.enemyAnims;
+						gs.layers[LAYER_IDX_CHARACTERS].push_back(enemy);
+
 						break;
 					}
 					case 4: // Player
