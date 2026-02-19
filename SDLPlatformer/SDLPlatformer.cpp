@@ -538,16 +538,16 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 
 						break;
 					}
-					/*case EnemyState::dead:
+					case EnemyState::dead:
 					{
-						if (obj.currentAnimation != 1 && obj.animations[obj.currentAnimation].isDone())
+						if (obj.currentAnimation != -1 && obj.animations[obj.currentAnimation].isDone())
 						{
 							obj.currentAnimation = -1;
 							obj.spriteFrame = 18;
 						}
 
 						break;
-					}*/
+					}
 				}
 		
 			
