@@ -527,6 +527,22 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 			if(obj.type == ObjectType::enemy)
 				switch (obj.data.enemyData.state)
 				{
+					case EnemyState::shambling:
+					{
+						glm::vec2 playerDir = gs.player().position - obj.position;
+
+						if (glm::length(playerDir) < 100)
+						{
+							currentDirection = playerDir.x < 0 ? -1 : 1;
+							obj.acceleration = glm::vec2(30, 0);
+						}
+						else
+						{
+							obj.acceleration = glm::vec2(0);
+							obj.velocity.x = 0;
+						}
+						break;
+					}
 					case EnemyState::damaged:
 					{
 						if (obj.data.enemyData.damagedTimer.step(deltaTime))
@@ -540,6 +556,8 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 					}
 					case EnemyState::dead:
 					{
+						obj.velocity.x = 0;
+
 						if (obj.currentAnimation != -1 && obj.animations[obj.currentAnimation].isDone())
 						{
 							obj.currentAnimation = -1;
@@ -631,10 +649,10 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 	*/
 	short map[MAP_ROWS][MAP_COLS] =
 	{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 2, 2, 0, 0, 3, 2, 0, 2, 0, 3, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 3, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	};
 
@@ -700,6 +718,8 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 							.w = 12,
 							.h = 28
 						};
+						enemy.maxSpeedX = 15;
+						enemy.dynamic = true;
 
 						gs.layers[LAYER_IDX_CHARACTERS].push_back(enemy);
 
@@ -833,6 +853,14 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 				genericResponse();
 				break;
 			}
+			case ObjectType::enemy:
+			{
+				if (objB.data.enemyData.state != EnemyState::dead)
+					objA.velocity = glm::vec2(100, 0) * -objA.direction;
+				}
+
+				break;
+			}
 		}
 	}
 	else
@@ -842,57 +870,60 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 
 			switch (objA.data.bulletData.state)
 			{
-				case BulletState::moving:
+			case BulletState::moving:
+			{
+				switch (objB.type)
 				{
-					switch (objB.type)
+				case ObjectType::level:
+				{
+					break;
+				}
+				case ObjectType::enemy:
+				{
+					EnemyData& data = objB.data.enemyData;
+
+					if (data.state != EnemyState::dead)
 					{
-						case ObjectType::level:
+						objB.direction = -objA.direction;
+						objB.shouldFlash = true;
+						objB.flashTimer.reset();
+						objB.texture = res.texEnemyHit;
+						objB.currentAnimation = res.ANIM_ENEMY_HIT;
+
+						// Damage enemy and flag dead if needed
+						data.state = EnemyState::damaged;
+						data.hitPoints -= 10;
+						if (data.hitPoints <= 0)
 						{
-							break;
-						}
-						case ObjectType::enemy:
-						{
-							EnemyData& data = objB.data.enemyData;
-
-							if (data.state != EnemyState::dead)
-							{
-								objB.direction = -objA.direction;
-								objB.shouldFlash = true;
-								objB.flashTimer.reset();
-								objB.texture = res.texEnemyHit;
-								objB.currentAnimation = res.ANIM_ENEMY_HIT;
-
-								// Damage enemy and flag dead if needed
-								data.state = EnemyState::damaged;
-								data.hitPoints -= 10;
-								if (data.hitPoints <= 0)
-								{
-									data.state = EnemyState::dead;
-									objB.texture = res.texEnemyDie;
-									objB.currentAnimation = res.ANIM_ENEMY_DIE;
-								}
-							}
-							else
-								passThrough = true;
-
-							break;
+							data.state = EnemyState::dead;
+							objB.texture = res.texEnemyDie;
+							objB.currentAnimation = res.ANIM_ENEMY_DIE;
 						}
 					}
-
-					if (!passThrough)
-					{
-						genericResponse();
-						objA.velocity *= 0;
-						objA.data.bulletData.state = BulletState::colliding;
-						objA.texture = res.texBulletHit;
-						objA.currentAnimation = res.ANIM_BULLET_HIT;
-					}
-					
+					else
+						passThrough = true;
 
 					break;
 				}
+				}
+
+				if (!passThrough)
+				{
+					genericResponse();
+					objA.velocity *= 0;
+					objA.data.bulletData.state = BulletState::colliding;
+					objA.texture = res.texBulletHit;
+					objA.currentAnimation = res.ANIM_BULLET_HIT;
+				}
+
+
+				break;
+			}
 			}
 		}
+		else
+			if (objA.type == ObjectType::enemy)
+				genericResponse();
 }
 
 void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_Scancode key, bool keyDown)
