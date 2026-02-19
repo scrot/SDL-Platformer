@@ -380,7 +380,11 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						.w = static_cast<float>(rs.texBullet->w),
 						.h = static_cast<float>(rs.texBullet->h)
 					};
-					bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, 0);
+
+					const int yVariation = 60.0f;
+					const float yVelocity = SDL_rand(yVariation) - yVariation / 2.0f;
+
+					bullet.velocity = glm::vec2(obj.velocity.x + 600.0f * obj.direction, yVelocity);
 					bullet.maxSpeedX = 1000.0f;
 					bullet.animations = rs.bulletAnims;
 
@@ -782,6 +786,7 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 				case BulletState::moving:
 				{
 					genericResponse();
+					objA.velocity *= 0;
 					objA.data.bulletData.state = BulletState::colliding;
 					objA.texture = res.texBulletHit;
 					objA.currentAnimation = res.ANIM_BULLET_HIT;
