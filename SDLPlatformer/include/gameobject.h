@@ -21,6 +21,13 @@ enum class BulletState
 	inactive
 };
 
+enum class EnemyState
+{
+	shambling,
+	damaged, 
+	dead
+};
+
 struct PlayerData
 {
 	PlayerState state;
@@ -39,7 +46,14 @@ struct LevelData
 
 struct EnemyData
 {
+	EnemyState state;
+	Timer damagedTimer;
+	int hitPoints;
 
+	EnemyData() : state(EnemyState::shambling), damagedTimer(0.5f)
+	{
+		hitPoints = 100;
+	}
 };
 
 struct BulletData
@@ -83,8 +97,11 @@ struct GameObject
 	bool dynamic;		// Whether the object is dynamic (affected by physics) or static (not affected by physics)	
 	bool grounded;		// Whether the object is currently on the ground or in the air
 	SDL_FRect collider;		// Collider rectangle for the object
+	Timer flashTimer;
+	bool shouldFlash;
+	int spriteFrame;
 	
-	GameObject() : data{ .levelData = LevelData() }, collider{ 0 } // Initialize the union with levelData by default
+	GameObject() : data{ .levelData = LevelData() }, collider{ 0 }, flashTimer(0.05f) // Initialize the union with levelData by default
 	{
 		type = ObjectType::level;
 		direction = 1;
@@ -96,5 +113,7 @@ struct GameObject
 		maxSpeedX = 0.0f;
 		dynamic = false;
 		grounded = false;
+		shouldFlash = false;
+		spriteFrame = 1;
 	}
 };

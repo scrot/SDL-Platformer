@@ -119,12 +119,7 @@ int main(int argc, char *argv[])
 		{
 			for (GameObject &obj : layer)
 			{
-				update(state, gs, res, obj, deltaTime);
-
-				if (obj.currentAnimation != -1)
-				{
-					obj.animations[obj.currentAnimation].step(deltaTime);
-				}
+				update(state, gs, res, obj, deltaTime);	
 			}
 		}
 
@@ -132,11 +127,6 @@ int main(int argc, char *argv[])
 		for (GameObject& bullet : gs.bullets)
 		{
 			update(state, gs, res, bullet, deltaTime);
-
-			if (bullet.currentAnimation != -1)
-			{
-				bullet.animations[bullet.currentAnimation].step(deltaTime);
-			}
 		}
 
 		// Calculate viewport position
@@ -282,7 +272,9 @@ bool initialize(SDLState& state)
 
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float width, float height, float deltaTime)
 { 
-	float srcX = obj.currentAnimation != -1 ? obj.animations[obj.currentAnimation].currentFrame() * width : 0;
+	float srcX = obj.currentAnimation != -1 
+		? obj.animations[obj.currentAnimation].currentFrame() * width 
+		: (obj.spriteFrame - 1) * width;
 
 	// The source rectangle (animation frame) that we want o render from the sprite sheet
 	SDL_FRect src
@@ -305,7 +297,23 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 	SDL_FlipMode flipMode = obj.direction == -1 ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	// cout << "Y VELOCITY: " << obj.velocity.y << endl;	// Command to force jumping to work. Still need to figure out the root cause of the problem
 
-	SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+	if (!obj.shouldFlash)
+		SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+	else
+	{
+		// Add reddish tint to enemy
+		float r = 2.5f;
+		float g = 1.0f;
+		float b = 1.0f;
+		float normal = 1.0f;
+
+		SDL_GetTextureColorModFloat(obj.texture, &r, &g, &b);
+		SDL_RenderTextureRotated(state.renderer, obj.texture, &src, &dst, 0, nullptr, flipMode);
+		SDL_GetTextureColorModFloat(obj.texture, &normal, &normal, &normal);
+
+		if (obj.flashTimer.step(deltaTime))
+			obj.shouldFlash = false;
+	}
 
 	// Print out debug stuff
 	if (gs.debugMode)
@@ -328,6 +336,12 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
 {
 	float currentDirection = 0.0f;
+
+	// Update the animation
+	if (obj.currentAnimation != -1)
+	{
+		obj.animations[obj.currentAnimation].step(deltaTime);
+	}
 
 	if (obj.dynamic && !obj.grounded)
 	{
@@ -508,8 +522,34 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 					break;
 				}
 			}
-			
 		}
+		else
+			if(obj.type == ObjectType::enemy)
+				switch (obj.data.enemyData.state)
+				{
+					case EnemyState::damaged:
+					{
+						if (obj.data.enemyData.damagedTimer.step(deltaTime))
+						{
+							obj.data.enemyData.state = EnemyState::shambling;
+							obj.texture = rs.texEnemy;
+							obj.currentAnimation = rs.ANIM_ENEMY;
+						}
+
+						break;
+					}
+					/*case EnemyState::dead:
+					{
+						if (obj.currentAnimation != 1 && obj.animations[obj.currentAnimation].isDone())
+						{
+							obj.currentAnimation = -1;
+							obj.spriteFrame = 18;
+						}
+
+						break;
+					}*/
+				}
+		
 			
 
 	if (currentDirection)
@@ -594,7 +634,7 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 3, 2, 0, 2, 0, 3, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	};
 
@@ -651,8 +691,16 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 					{
 						GameObject enemy = createObject(row, col, res.texEnemy, ObjectType::enemy);
 
+						enemy.data.enemyData = EnemyData();
 						enemy.currentAnimation = res.ANIM_ENEMY;
 						enemy.animations = res.enemyAnims;
+						enemy.collider = SDL_FRect{
+							.x = 10,
+							.y = 4,
+							.w = 12,
+							.h = 28
+						};
+
 						gs.layers[LAYER_IDX_CHARACTERS].push_back(enemy);
 
 						break;
@@ -790,15 +838,56 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 	else
 		if (objA.type == ObjectType::bullet)
 		{
+			bool passThrough = false;
+
 			switch (objA.data.bulletData.state)
 			{
 				case BulletState::moving:
 				{
-					genericResponse();
-					objA.velocity *= 0;
-					objA.data.bulletData.state = BulletState::colliding;
-					objA.texture = res.texBulletHit;
-					objA.currentAnimation = res.ANIM_BULLET_HIT;
+					switch (objB.type)
+					{
+						case ObjectType::level:
+						{
+							break;
+						}
+						case ObjectType::enemy:
+						{
+							EnemyData& data = objB.data.enemyData;
+
+							if (data.state != EnemyState::dead)
+							{
+								objB.direction = -objA.direction;
+								objB.shouldFlash = true;
+								objB.flashTimer.reset();
+								objB.texture = res.texEnemyHit;
+								objB.currentAnimation = res.ANIM_ENEMY_HIT;
+
+								// Damage enemy and flag dead if needed
+								data.state = EnemyState::damaged;
+								data.hitPoints -= 10;
+								if (data.hitPoints <= 0)
+								{
+									data.state = EnemyState::dead;
+									objB.texture = res.texEnemyDie;
+									objB.currentAnimation = res.ANIM_ENEMY_DIE;
+								}
+							}
+							else
+								passThrough = true;
+
+							break;
+						}
+					}
+
+					if (!passThrough)
+					{
+						genericResponse();
+						objA.velocity *= 0;
+						objA.data.bulletData.state = BulletState::colliding;
+						objA.texture = res.texBulletHit;
+						objA.currentAnimation = res.ANIM_BULLET_HIT;
+					}
+					
 
 					break;
 				}

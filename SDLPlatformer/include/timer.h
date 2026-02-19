@@ -16,7 +16,7 @@ public:
 		timeout = false;
 	}
 
-	void step(float deltaTime)
+	bool step(float deltaTime)
 	{
 		time += deltaTime;
 
@@ -24,7 +24,11 @@ public:
 		{
 			time -= length;
 			timeout = true;
+
+			return true;
 		}
+
+		return false;
 	}
 
 	const bool isTimeout()
