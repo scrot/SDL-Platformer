@@ -7,12 +7,14 @@
 #include <string>
 #include <array>
 #include <format>
+#include <filesystem>
 
 #include "include/SDLPlatformer.h"
 #include "include/gameobject.h"
 #include "include/gamestate.h"
 #include "include/resources.h"
 #include "include/sdlstate.h"
+#include "include/tmx.h"
 
 using namespace std;
 
@@ -161,7 +163,7 @@ int main(int argc, char *argv[])
 		{
 			for (GameObject &obj : layer)
 			{
-				drawObject(state, gs, obj, TILE_SIZE, TILE_SIZE, deltaTime);
+				drawObject(state, gs, obj, res.map->tileWidth, res.map->tileHeight, deltaTime);
 			}
 		}
 
@@ -639,6 +641,32 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 
 void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 {
+	struct LayerVisitor
+	{
+		const SDLState& state;
+		GameState& gs;
+		const Resources& res;
+
+		LayerVisitor(const SDLState& state, GameState& gs, const Resources& res) : state(state), gs(gs), res(res)
+		{
+
+		}
+
+		void operator()(tmx::Layer& layer)
+		{
+
+		}
+
+		void operator()(tmx::ObjectGroup& objectGroup)
+		{
+
+		}
+	};
+
+	LayerVisitor visitor(state, gs, res);
+	for (auto& layer : res.map->layers)
+		std::visit(visitor, layer);
+
 	/*
 		1 -- Ground
 		2 -- Panel

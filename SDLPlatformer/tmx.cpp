@@ -1,7 +1,8 @@
 #include <filesystem>
 #include <sstream>
+#include <iostream>
 
-#include "tinyxml2.h"
+#include "ext/tinyxml2/tinyxml2.h"
 #include "include/tmx.h"
 
 using namespace tmx;
@@ -9,6 +10,7 @@ using namespace tmx;
 std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 {
 	using namespace tinyxml2;
+	using namespace std;
 
 	std::filesystem::path mapPath(mapFilePath);
 
@@ -50,7 +52,7 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 
 				tmx::TileSet newTileset(firstgid, count, tileWidth, tileHeight, columns);
 
-				for (XMLElement* tile = tile->FirstChildElement("image"); tile != nullptr; tile = tile->NextSiblingElement("image"))
+				for (XMLElement* tile = ts->FirstChildElement("tile"); tile != nullptr; tile = tile->NextSiblingElement("tile"))
 				{
 					Tile newTile;
 					newTile.id = tile->IntAttribute("id");
@@ -59,7 +61,7 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 
 					if (image)
 					{
-						newTile.image.source = image->IntAttribute("image");
+						newTile.image.source = image->Attribute("source");
 						newTile.image.width = image->IntAttribute("width");
 						newTile.image.height = image->IntAttribute("height");
 					}
@@ -89,6 +91,7 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 				}
 
 				map->layers.push_back(std::move(layer));
+
 			}
 			else
 				if (strcmp(child->Name(), "objectgroup") == 0)

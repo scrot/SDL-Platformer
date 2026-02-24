@@ -11,6 +11,7 @@ struct GameState
 	std::vector<GameObject> bullets;
 
 	int playerIndex;
+	int playerLayer;
 	SDL_FRect mapViewport;
 	float bg2Scroll;
 	float bg3Scroll;
@@ -37,6 +38,6 @@ struct GameState
 
 	GameObject& player()
 	{
-		return layers[LAYER_IDX_CHARACTERS][playerIndex];
+		return layers[playerLayer][playerIndex];
 	}
 };

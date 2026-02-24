@@ -6,9 +6,15 @@
 
 #include "animation.h"
 #include "sdlstate.h"
+#include "tmx.h"
 
 struct Resources
 {
+	struct TileSetTextures
+	{
+		int firstGid;
+		std::vector<SDL_Texture*>textures;
+	};
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation
 	const int ANIM_PLAYER_SLIDE = 2; // Index for sliding animation
@@ -44,6 +50,10 @@ struct Resources
 	SDL_Texture* texEnemy;
 	SDL_Texture* texEnemyHit;
 	SDL_Texture* texEnemyDie;
+
+	std::unique_ptr<tmx::Map> map;
+
+	std::vector<TileSetTextures> tilesetTextures;
 
 	/* @brief Load the requested texture.
 	*
@@ -107,6 +117,24 @@ struct Resources
 		texEnemy = loadTexture(state.renderer, "assets/enemy.png");
 		texEnemyHit = loadTexture(state.renderer, "assets/enemy_hit.png");
 		texEnemyDie = loadTexture(state.renderer, "assets/enemy_die.png");
+
+		// Load map
+		map = tmx::loadMap("assets/maps/smallmap.tmx");
+
+		for (tmx::TileSet& tileSet : map->tileSets)
+		{
+			TileSetTextures tst;
+			tst.firstGid = tileSet.firstgid;
+			tst.textures.reserve(tileSet.tiles.size());
+
+			for (tmx::Tile& tile : tileSet.tiles)
+			{
+				const std::string imagePath = "assets/tiles/" + std::filesystem::path(tile.image.source).filename().string();
+				tst.textures.push_back(loadTexture(state.renderer, imagePath));
+			}
+
+			tilesetTextures.push_back(std::move(tst));
+		}
 	}
 
 	/**
