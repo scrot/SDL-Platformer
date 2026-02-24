@@ -1,0 +1,76 @@
+#pragma once
+
+#include <vector>
+#include <string>
+#include <memory>
+#include <variant>
+
+namespace tmx
+{
+	struct Layer
+	{
+		int id;
+		std::string name;
+		std::vector<int> data;
+	};
+
+	struct LayerObject
+	{
+		int id;
+		std::string name;
+		std::string type;
+		float x;
+		float y;
+	};
+
+	struct ObjectGroup
+	{
+		int id;
+		std::string name;
+		std::vector<LayerObject> objects;
+	};
+
+	struct Image
+	{
+		int id;
+		std::string source;
+		int width;
+		int height;
+	};
+
+	struct Tile
+	{
+		int id;
+		Image image;
+	};
+
+	struct TileSet
+	{
+		int count;
+		int tileWidth;
+		int tileHeight;
+		int columns;
+		int firstgid;
+		std::vector<Tile> tiles;
+
+	public:
+		TileSet(int firstgid, int count, int tileWidth, int tileHeight, int columns)
+			: firstgid(firstgid), count(count), tileWidth(tileWidth), tileHeight(tileHeight), columns(columns)
+		{
+		}
+	};
+
+	struct Map
+	{
+		int mapWidth;
+		int mapHeight;
+		int tileWidth;
+		int tileHeight;
+		std::vector<TileSet> tileSets;
+		std::vector<std::variant<Layer, ObjectGroup>> layers;
+	};
+
+	std::unique_ptr<Map> loadMap(const std::string& mapFilePath);
+
+
+};
