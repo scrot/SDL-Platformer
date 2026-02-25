@@ -8,7 +8,7 @@ find_package(GLM REQUIRED)
 # find_package(tinyxml2 REQUIRED)
 
 # Add source to this project's executable.
-add_executable (SDLPlatformer "SDLPlatformer.cpp" "include/SDLPlatformer.h" "include/timer.h" "include/animation.h" "include/gameobject.h" "include/tmx.h" "tmx.cpp" "ext/tinyxml2/tinyxml2.cpp")
+add_executable (SDLPlatformer "SDLPlatformer.cpp" "include/SDLPlatformer.h" "include/timer.h" "include/animation.h" "include/gameobject.h" "include/tmx.h" "tmx.cpp" "tinyxml2.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET SDLPlatformer PROPERTY CXX_STANDARD 20)
