@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <SDL3_image/SDL_image.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include "animation.h"
 #include "sdlstate.h"
@@ -44,6 +45,14 @@ struct Resources
 	SDL_Texture* texEnemy;
 	SDL_Texture* texEnemyHit;
 	SDL_Texture* texEnemyDie;
+
+	std::vector<MIX_Audio*> chunks;
+
+	MIX_Audio* loadChunk(const std::string &filepath)
+	{
+		MIX_Audio* chunk = MIX_LoadAudio(nullptr,  filepath.c_str(), true);
+		// MIX_SetTrackGain(chunk, MIX_MAX_VOLUME / 2);
+	}
 
 	/* @brief Load the requested texture.
 	*
