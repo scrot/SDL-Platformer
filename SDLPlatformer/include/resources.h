@@ -46,12 +46,19 @@ struct Resources
 	SDL_Texture* texEnemyHit;
 	SDL_Texture* texEnemyDie;
 
+	MIX_Audio* chunkShoot;
+	MIX_Audio* chunkShootHit;
+
 	std::vector<MIX_Audio*> chunks;
+	MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
 
 	MIX_Audio* loadChunk(const std::string &filepath)
 	{
-		MIX_Audio* chunk = MIX_LoadAudio(nullptr,  filepath.c_str(), true);
-		// MIX_SetTrackGain(chunk, MIX_MAX_VOLUME / 2);
+		MIX_Audio* chunk = MIX_LoadAudio(mixer, filepath.c_str(), true);
+
+		chunks.push_back(chunk);
+
+		return chunk;
 	}
 
 	/* @brief Load the requested texture.
@@ -116,6 +123,10 @@ struct Resources
 		texEnemy = loadTexture(state.renderer, "assets/enemy.png");
 		texEnemyHit = loadTexture(state.renderer, "assets/enemy_hit.png");
 		texEnemyDie = loadTexture(state.renderer, "assets/enemy_die.png");
+
+		// Load audio sounds
+		chunkShoot = loadChunk("assets/audio/shoot.wav");
+		chunkShootHit = loadChunk("assets/audio/wall_hit.wav");
 	}
 
 	/**

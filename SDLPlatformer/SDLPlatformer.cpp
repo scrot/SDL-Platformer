@@ -234,10 +234,20 @@ bool initialize(SDLState& state)
 {
 	bool initSuccess = true;
 
+	
+
 	// Initialize the SDL video subsystem
-	if (!SDL_Init(SDL_INIT_VIDEO))
+	if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) || !MIX_Init())
 	{
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unable to initialize SDL", NULL);
+
+		initSuccess = false;
+	}
+	
+	if (!SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr, nullptr, nullptr))
+	{
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Unable to initialize SDL audio", NULL);
+		cleanup(state);
 
 		initSuccess = false;
 	}
@@ -429,6 +439,8 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 					// If no inactive slot is found, add new bullet to vector
 					if (!foundInactive)
 						gs.bullets.push_back(bullet);
+
+					MIX_PlayAudio(rs.mixer, rs.chunkShoot);
 				}
 			}
 			else
@@ -876,6 +888,8 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 				{
 				case ObjectType::level:
 				{
+					if (!MIX_PlayAudio(res.mixer, res.chunkShootHit))
+						cout<<SDL_GetError()<<endl;
 					break;
 				}
 				case ObjectType::enemy:
