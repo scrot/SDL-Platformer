@@ -49,6 +49,7 @@ struct Resources
 	MIX_Audio* chunkShoot;
 	MIX_Audio* chunkShootHit;
 	MIX_Audio* chunkEnemyHit;
+	MIX_Audio* chunkEnemyDie;
 	MIX_Audio* levelMusic;
 
 	std::vector<MIX_Audio*> chunks;
@@ -130,6 +131,7 @@ struct Resources
 		chunkShoot = loadChunk("assets/audio/shoot.wav");
 		chunkShootHit = loadChunk("assets/audio/wall_hit.wav");
 		chunkEnemyHit = loadChunk("assets/audio/enemy_hit.wav");
+		chunkEnemyDie = loadChunk("assets/audio/enemy_die.wav");
 		levelMusic = loadChunk("assets/audio/levelMusic.mp3");
 	}
 

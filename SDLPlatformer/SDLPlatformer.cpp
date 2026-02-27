@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	// Play level music
 	MIX_Track* track = MIX_CreateTrack(res.mixer);
 	MIX_SetTrackAudio(track, res.levelMusic);
-	MIX_PlayTrack(track, 0);
+	MIX_PlayTrack(track, -1);
 
 	// Start the main game loop
 	while (isRunning)
@@ -670,7 +670,7 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 		0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 3, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 2, 2, 0, 0, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 0, 3, 0, 0, 0, 5, 0, 0, 6, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0,
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 	};
 
@@ -917,6 +917,8 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 							data.state = EnemyState::dead;
 							objB.texture = res.texEnemyDie;
 							objB.currentAnimation = res.ANIM_ENEMY_DIE;
+
+							MIX_PlayAudio(res.mixer, res.chunkEnemyDie);
 						}
 
 						if (!MIX_PlayAudio(res.mixer, res.chunkEnemyHit))
