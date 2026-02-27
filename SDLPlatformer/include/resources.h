@@ -48,6 +48,8 @@ struct Resources
 
 	MIX_Audio* chunkShoot;
 	MIX_Audio* chunkShootHit;
+	MIX_Audio* chunkEnemyHit;
+	MIX_Audio* levelMusic;
 
 	std::vector<MIX_Audio*> chunks;
 	MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
@@ -127,6 +129,8 @@ struct Resources
 		// Load audio sounds
 		chunkShoot = loadChunk("assets/audio/shoot.wav");
 		chunkShootHit = loadChunk("assets/audio/wall_hit.wav");
+		chunkEnemyHit = loadChunk("assets/audio/enemy_hit.wav");
+		levelMusic = loadChunk("assets/audio/levelMusic.mp3");
 	}
 
 	/**

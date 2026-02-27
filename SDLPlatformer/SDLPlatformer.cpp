@@ -62,6 +62,11 @@ int main(int argc, char *argv[])
 	GameObject player;
 
 	createTiles(state, gs, res);
+	
+	// Play level music
+	MIX_Track* track = MIX_CreateTrack(res.mixer);
+	MIX_SetTrackAudio(track, res.levelMusic);
+	MIX_PlayTrack(track, 0);
 
 	// Start the main game loop
 	while (isRunning)
@@ -913,6 +918,9 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 							objB.texture = res.texEnemyDie;
 							objB.currentAnimation = res.ANIM_ENEMY_DIE;
 						}
+
+						if (!MIX_PlayAudio(res.mixer, res.chunkEnemyHit))
+							cout << SDL_GetError() << endl;
 					}
 					else
 						passThrough = true;
