@@ -33,6 +33,7 @@ void checkCollision(const SDLState& state, GameState& gs, Resources& res, GameOb
 void handleKeyInput(const SDLState& state, GameState& gs, GameObject& obj, SDL_Scancode key, bool keyDown);
 void drawParallaxBackground(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity,
 	float& scrollPos, float scrollFactor, float deltaTime);
+void createTiles(const SDLState& state, GameState& gs, const Resources& res);
 
 int main(int argc, char *argv[])
 {
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
 		drawParallaxBackground(state.renderer, res.texBg2, gs.player().velocity.x, gs.bg2Scroll, 0.3f, deltaTime);
 
 		// Draw background tiles
-		for (GameObject &obj : gs.backgroundTiles)
+		/*for (GameObject& obj : gs.backgroundTiles)
 		{
 			SDL_FRect dst =
 			{
@@ -163,13 +164,14 @@ int main(int argc, char *argv[])
 
 			SDL_RenderTexture(state.renderer, obj.texture, nullptr, &dst);
 		}
+		*/
 
 		// Draw all objects
 		for (auto &layer : gs.layers)
 		{
 			for (GameObject &obj : layer)
 			{
-				drawObject(state, gs, obj, TILE_SIZE, TILE_SIZE, deltaTime);
+				drawObject(state, gs, obj, res.map->tileWidth, res.map->tileHeight, deltaTime);
 			}
 		}
 
@@ -181,7 +183,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Draw foreground tiles
-		for (GameObject& obj : gs.foregroundTiles)
+		/* for (GameObject& obj : gs.foregroundTiles)
 		{
 			SDL_FRect dst =
 			{
@@ -193,6 +195,7 @@ int main(int argc, char *argv[])
 
 			SDL_RenderTexture(state.renderer, obj.texture, nullptr, &dst);
 		}
+		*/
 
 		if (gs.debugMode)
 		{
@@ -290,24 +293,27 @@ bool initialize(SDLState& state)
 
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float width, float height, float deltaTime)
 { 
-	float srcX = obj.currentAnimation != -1 
-		? obj.animations[obj.currentAnimation].currentFrame() * width 
-		: (obj.spriteFrame - 1) * width;
+	
 
 	// The source rectangle (animation frame) that we want o render from the sprite sheet
 	SDL_FRect src
 	{
-		.x = srcX,
+		.x = 0,
 		.y = 0,
 		.w = width,
 		.h = height
 	};
 
+	src.x = obj.currentAnimation != -1
+		? obj.animations[obj.currentAnimation].currentFrame() * width
+		: (obj.spriteFrame - 1) * width;
+	src.y = 0;
+
 	// The destination rectangle (position on the screen) that we want to render to
 	SDL_FRect dst
 	{
 		.x = obj.position.x - gs.mapViewport.x,
-		.y = obj.position.y,
+		.y = obj.position.y - gs.mapViewport.y,
 		.w = width,
 		.h = height
 	};
@@ -587,78 +593,182 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 						break;
 					}
 				}
-		
-			
 
-	if (currentDirection)
-		obj.direction = currentDirection;
 
-	// Add acceleration to velocity
-	obj.velocity += currentDirection * obj.acceleration * deltaTime;
 
-	// Clamp velocity to max speed
-	if (std::abs(obj.velocity.x) > obj.maxSpeedX)
-	{
-		obj.velocity.x = obj.direction * obj.maxSpeedX;
-	}
+				if (currentDirection)
+					obj.direction = currentDirection;
 
-	// Add velocity to position
-	obj.position += obj.velocity * deltaTime;
+				// Add acceleration to velocity
+				obj.velocity += currentDirection * obj.acceleration * deltaTime;
 
-	// Handle collision detection
-	bool foundGround = false;
-
-	for(auto &layer : gs.layers)
-	{
-		for (GameObject &other : layer)
-		{
-			if (&obj != &other)
-			{
-				checkCollision(state, gs, rs, obj, other, deltaTime);
-
-				if (other.type == ObjectType::level)
+				// Clamp velocity to max speed
+				if (std::abs(obj.velocity.x) > obj.maxSpeedX)
 				{
-					// Grounded sensor
-					SDL_FRect sensor
-					{
-						.x = obj.position.x + obj.collider.x,
-						.y = obj.position.y + obj.collider.y + obj.collider.h,
-						.w = obj.collider.w,
-						.h = 1
-					};
+					obj.velocity.x = obj.direction * obj.maxSpeedX;
+				}
 
-					SDL_FRect ground
-					{
-						.x = other.position.x + other.collider.x,
-						.y = other.position.y + other.collider.y,
-						.w = other.collider.w,
-						.h = other.collider.h
-					};
+				// Add velocity to position
+				obj.position += obj.velocity * deltaTime;
 
-					SDL_FRect intersection = { 0 };
+				// Handle collision detection
+				bool foundGround = false;
 
-					if (SDL_GetRectIntersectionFloat(&sensor, &ground, &intersection))
+				for (auto& layer : gs.layers)
+				{
+					for (GameObject& other : layer)
 					{
-						foundGround = true;
+						if (&obj != &other)
+						{
+							checkCollision(state, gs, rs, obj, other, deltaTime);
+
+							if (other.type == ObjectType::level)
+							{
+								// Grounded sensor
+								SDL_FRect sensor
+								{
+									.x = obj.position.x + obj.collider.x,
+									.y = obj.position.y + obj.collider.y + obj.collider.h,
+									.w = obj.collider.w,
+									.h = 1
+								};
+
+								SDL_FRect ground
+								{
+									.x = other.position.x + other.collider.x,
+									.y = other.position.y + other.collider.y,
+									.w = other.collider.w,
+									.h = other.collider.h
+								};
+
+								SDL_FRect intersection = { 0 };
+
+								if (SDL_GetRectIntersectionFloat(&sensor, &ground, &intersection))
+								{
+									foundGround = true;
+								}
+							}
+						}
 					}
 				}
-			}
-		}
-	}
 
-	if (obj.grounded != foundGround)
-	{
-		obj.grounded = foundGround;
+				if (obj.grounded != foundGround)
+				{
+					obj.grounded = foundGround;
 
-		if (foundGround && obj.type == ObjectType::player)
-		{
-			obj.data.playerData.state = PlayerState::running;
-		}
-	}
+					if (foundGround && obj.type == ObjectType::player)
+					{
+						obj.data.playerData.state = PlayerState::running;
+					}
+				}
 }
 
 void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 {
+	struct LayerVisitor
+	{
+		const SDLState& state;
+		GameState& gs;
+		const Resources& res;
+
+		LayerVisitor(const SDLState& state, GameState& gs, const Resources& res) : state(state), gs(gs), res(res)
+		{
+
+		}
+
+		auto createObject(int r, int c, SDL_Texture* tex, ObjectType type)
+		{
+			GameObject o;
+			o.type = type;
+			o.position = glm::vec2(c * res.map->tileWidth, r * res.map->tileHeight);
+			o.texture = tex;
+			o.collider =
+			{
+				.x = 0,
+				.y = 0,
+				.w = TILE_SIZE,
+				.h = TILE_SIZE
+			};
+
+			return o;
+		}
+
+		void operator()(tmx::Layer& layer)
+		{
+			std::vector<GameObject> newLayer;
+
+			for (int r = 0;r<res.map->mapHeight;++r)
+				for (int c = 0; c < res.map->mapWidth; ++c)
+				{
+					const int tGid = layer.data[r * res.map->mapWidth + c];
+
+					if (tGid)
+					{
+						const auto itr = std::find_if(res.tilesetTextures.begin(), res.tilesetTextures.end(),
+							[tGid](const TileSetTextures& tst) {
+								return tGid >= tst.firstGid && tGid < tst.firstGid + tst.textures.size();
+							});
+
+						const TileSetTextures& tst = *itr;
+						SDL_Texture* tex = tst.textures[tGid - tst.firstGid];
+
+						auto tile = createObject(r, c, tex, ObjectType::level);
+
+						if (layer.name != "Level")
+							tile.collider.w = tile.collider.h = 0;
+
+						newLayer.push_back(tile);
+					}
+				}
+
+			gs.layers.push_back(std::move(newLayer));
+		}
+
+		void operator()(tmx::ObjectGroup& objectGroup)
+		{
+			std::vector<GameObject> newLayer;
+
+			for (tmx::LayerObject& obj : objectGroup.objects)
+			{
+				glm::vec2 objPos(
+					obj.x - res.map->tileWidth / 2,
+					obj.y - res.map->tileHeight / 2);
+
+				if (obj.type == "Player")
+				{
+					GameObject player = createObject(1, 1, res.texIdle, ObjectType::player);
+					player.position = objPos;
+					player.data.playerData = PlayerData();
+					player.animations = res.playerAnims;
+					player.currentAnimation = res.ANIM_PLAYER_IDLE;
+					player.acceleration = glm::vec2(300, 0);
+					player.maxSpeedX = 100;
+					player.dynamic = true;
+					player.collider = {
+						.x = 11,
+						.y = 6,
+						.w = 10,
+						.h = 26
+					};
+
+					newLayer.push_back(player);
+
+					gs.playerIndex = newLayer.size();
+					gs.playerLayer = gs.layers.size();
+				}
+				gs.layers.push_back(std::move(newLayer));
+			}
+		}
+
+		
+	};
+
+	LayerVisitor visitor(state, gs, res);
+	
+	for (auto& layer : res.map->layers)
+	{
+		std::visit(visitor, layer);
+	}
 	/*
 		1 -- Ground
 		2 -- Panel
@@ -770,14 +880,14 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 					case 5: // grass
 					{
 						GameObject obj = createObject(row, col, res.texGrass, ObjectType::level);
-						gs.foregroundTiles.push_back(obj);
+						// gs.foregroundTiles.push_back(obj);
 
 						break;
 					}
 					case 6: // brick
 					{
 						GameObject obj = createObject(row, col, res.texBrick, ObjectType::level);
-						gs.backgroundTiles.push_back(obj);
+						// gs.backgroundTiles.push_back(obj);
 
 						break;
 					}

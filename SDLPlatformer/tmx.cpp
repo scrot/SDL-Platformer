@@ -52,8 +52,8 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 				int columns = ts->IntAttribute("tilecolumns");
 
 				tmx::TileSet newTileset(firstgid, count, tileWidth, tileHeight, columns);
-
-				for (XMLElement* tile = tile->FirstChildElement("image"); tile != nullptr; tile = tile->NextSiblingElement("image"))
+				XMLElement* tile = nullptr;
+				for (tile = tile->FirstChildElement("image"); tile != nullptr; tile = tile->NextSiblingElement("image"))
 				{
 					Tile newTile;
 					newTile.id = tile->IntAttribute("id");

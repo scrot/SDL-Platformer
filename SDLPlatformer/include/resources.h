@@ -12,13 +12,15 @@
 
 using namespace std;
 
+struct TileSetTextures
+{
+	int firstGid;
+	std::vector<SDL_Texture*> textures;
+};
+
 struct Resources
 {
-	struct TileSetTextures
-	{
-		int firstGid;
-		std::vector<SDL_Texture*> textures;
-	};
+	
 
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation

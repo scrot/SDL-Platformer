@@ -5,12 +5,11 @@
 // Structure to hold all gane info, including game objects, player index, etc.
 struct GameState
 {
-	std::array<std::vector<GameObject>, 2> layers;
-	std::vector<GameObject> backgroundTiles;
-	std::vector<GameObject> foregroundTiles;
+	std::vector<std::vector<GameObject>> layers;
 	std::vector<GameObject> bullets;
 
 	int playerIndex;
+	int playerLayer;
 	SDL_FRect mapViewport;
 	float bg2Scroll;
 	float bg3Scroll;
