@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 
 #include <SDL3_image/SDL_image.h>
@@ -7,9 +8,18 @@
 
 #include "animation.h"
 #include "sdlstate.h"
+#include "tmx.h"
+
+using namespace std;
 
 struct Resources
 {
+	struct TileSetTextures
+	{
+		int firstGid;
+		std::vector<SDL_Texture*> textures;
+	};
+
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
 	const int ANIM_PLAYER_RUNNING = 1;	// Index for running animation
 	const int ANIM_PLAYER_SLIDE = 2; // Index for sliding animation
@@ -54,6 +64,9 @@ struct Resources
 
 	std::vector<MIX_Audio*> chunks;
 	MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+
+	std::vector<TileSetTextures> tilesetTextures;
+	std::unique_ptr<tmx::Map> map;
 
 	MIX_Audio* loadChunk(const std::string &filepath)
 	{
@@ -133,6 +146,24 @@ struct Resources
 		chunkEnemyHit = loadChunk("assets/audio/enemy_hit.wav");
 		chunkEnemyDie = loadChunk("assets/audio/enemy_die.wav");
 		levelMusic = loadChunk("assets/audio/levelMusic.mp3");
+
+		// Load maps
+		map = tmx::loadMap("assets/map/smallmap.tmx");
+
+		for (tmx::TileSet& tileSet : map->tileSets)
+		{
+			TileSetTextures tst;
+			tst.firstGid = tileSet.firstgid;
+			tst.textures.reserve(tileSet.tiles.size());
+
+			for (tmx::Tile& tile : tileSet.tiles)
+			{
+				const std::string imagePath = "assets/tiles/" + std::filesystem::path(tile.image.source).filename().string();
+				tst.textures.push_back(loadTexture(state.renderer, imagePath));
+			}
+
+			tilesetTextures.push_back(std::move(tst));
+		}
 	}
 
 	/**

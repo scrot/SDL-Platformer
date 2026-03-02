@@ -1,10 +1,13 @@
 #include <filesystem>
 #include <sstream>
 
+#include <iostream>
+
 #include "tinyxml2.h"
 #include "include/tmx.h"
 
 using namespace tmx;
+using namespace std;
 
 std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 {
@@ -15,7 +18,7 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 	tmx::Map* map = nullptr;
 
 	XMLDocument doc;
-	doc.LoadFile(mapPath.string().c_str());
+	doc.LoadFile("c:\\smallmap.tmx");
 	XMLElement* mapDoc = doc.FirstChildElement("map");
 
 	if (mapDoc)
@@ -66,6 +69,8 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 
 					newTileset.tiles.push_back(newTile);
 				}
+
+				map->tileSets.push_back(std::move(newTileset));
 
 			}
 		}
