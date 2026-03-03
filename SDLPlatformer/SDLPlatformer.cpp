@@ -777,6 +777,7 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 		5 -- Grass
 		6 -- Brick
 	*/
+	cout << "TSET" << endl;
 	short map[MAP_ROWS][MAP_COLS] =
 	{
 		0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
