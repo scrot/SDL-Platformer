@@ -17,16 +17,12 @@ using namespace tmx;
  *
  * NOTE: This function is not yet called anywhere in the game loop -- level
  * geometry is still built by SDLPlatformer.cpp's createTiles() from
- * hardcoded arrays. It also currently has several known bugs that mean it
- * will not correctly parse a real .tmx/.tsx file yet (flagged inline below):
- * a couple of misspelled/mis-cased XML attribute names, a map height/width
- * field overwrite, and a tile-image loop that references its own
- * uninitialized loop variable.
+ * hardcoded arrays.
  *
  * @param mapFilePath -- Path to the .tmx file to load.
  *
- * @return The parsed Map, or a Map left partially/never initialized if
- * mapFilePath could not be parsed as a <map> document (see BUG note below).
+ * @return The parsed Map, or nullptr if mapFilePath could not be parsed as a
+ * Tiled <map> document.
  */
 std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 {
@@ -40,22 +36,16 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 	doc.LoadFile(mapPath.string().c_str());
 	XMLElement* mapDoc = doc.FirstChildElement("map");
 
-	if (mapDoc)
-	{
-		map = new tmx::Map;
-		map->mapWidth = mapDoc->IntAttribute("width");
-		map->mapHeight = mapDoc->IntAttribute("height");
-		// BUG: Tiled's actual XML attributes are "tilewidth"/"tileheight" (lowercase),
-		// not "tileWidth"/"tileHeight", so both IntAttribute() calls below return 0.
-		// The second line also assigns into tileWidth again instead of tileHeight,
-		// so map->tileHeight is never set at all.
-		map->tileWidth = mapDoc->IntAttribute("tileWidth");
-		map->tileWidth = mapDoc->IntAttribute("tileHeight");
+	// If the file failed to load or isn't a Tiled map, there's nothing to parse.
+	if (!mapDoc)
+		return nullptr;
 
-	}
+	map = new tmx::Map;
+	map->mapWidth = mapDoc->IntAttribute("width");
+	map->mapHeight = mapDoc->IntAttribute("height");
+	map->tileWidth = mapDoc->IntAttribute("tilewidth");
+	map->tileHeight = mapDoc->IntAttribute("tileheight");
 
-	// BUG: if mapDoc is null (e.g. the file failed to load or isn't a Tiled
-	// map), this dereferences a null pointer instead of returning early.
 	for (XMLElement* child = mapDoc->FirstChildElement(); child != nullptr; child = child->NextSiblingElement())
 	{
 		if (strcmp(child->Name(), "tileset") == 0)
@@ -74,17 +64,12 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 				int tileWidth = ts->IntAttribute("tilewidth");
 				int tileHeight = ts->IntAttribute("tileheight");
 				int count = ts->IntAttribute("tilecount");
-				// BUG: Tiled's tileset column-count attribute is "columns", not
-				// "tilecolumns" -- this always reads back 0.
-				int columns = ts->IntAttribute("tilecolumns");
+				int columns = ts->IntAttribute("columns");
 
 				tmx::TileSet newTileset(firstgid, count, tileWidth, tileHeight, columns);
 
-				// BUG: `tile` is read (via tile->FirstChildElement) before it has been
-				// initialized by its own loop -- this is undefined behavior, not a walk
-				// over ts's child <tile> elements. This loop needs to start from
-				// ts->FirstChildElement("tile") instead.
-				for (XMLElement* tile = tile->FirstChildElement("image"); tile != nullptr; tile = tile->NextSiblingElement("image"))
+				// Walk each <tile> element and pull its <image> child's source/size.
+				for (XMLElement* tile = ts->FirstChildElement("tile"); tile != nullptr; tile = tile->NextSiblingElement("tile"))
 				{
 					Tile newTile;
 					newTile.id = tile->IntAttribute("id");
@@ -93,10 +78,11 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 
 					if (image)
 					{
-						// BUG: Image::source is a std::string (the "source" attribute,
-						// e.g. "../tiles/brick.png"), but this reads a nonexistent
-						// "image" attribute as an int and assigns it to a string.
-						newTile.image.source = image->IntAttribute("image");
+						const char* source = image->Attribute("source");
+
+						if (source)
+							newTile.image.source = source;
+
 						newTile.image.width = image->IntAttribute("width");
 						newTile.image.height = image->IntAttribute("height");
 					}
@@ -104,8 +90,7 @@ std::unique_ptr<Map> tmx::loadMap(const std::string& mapFilePath)
 					newTileset.tiles.push_back(newTile);
 				}
 
-				// NOTE: newTileset is never added to map->tileSets here, so parsed
-				// tilesets are currently discarded.
+				map->tileSets.push_back(std::move(newTileset));
 			}
 		}
 		else

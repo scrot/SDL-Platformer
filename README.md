@@ -128,6 +128,6 @@ Sprites are drawn by slicing the current animation frame (or a fixed `spriteFram
 
 ## Known limitations / in-progress work
 
-- **Tiled map loading is incomplete and unused.** `tmx::loadMap` (`tmx.cpp`) parses `.tmx`/`.tsx` XML into `tmx::Map`/`TileSet`/`Layer` structures, but nothing in the game loop calls it yet — `createTiles`'s hardcoded arrays are still the only way levels are built. The loader itself also has a couple of known bugs (e.g. it reads `tilecolumns` instead of `columns`, and a tileset's `tileHeight` is currently overwritten by the wrong attribute read).
+- **Tiled map loading parses correctly but is still unused.** `tmx::loadMap` (`tmx.cpp`) parses `.tmx`/`.tsx` XML into `tmx::Map`/`TileSet`/`Layer` structures (its earlier attribute-name and tileset-parsing bugs have been fixed), but nothing in the game loop calls it yet — `createTiles`'s hardcoded arrays are still the only way levels are built.
 - The debug overlay and inline comments in `update()` reference a past bug with jumping/Y-velocity that may still be worth revisiting.
 - There's no automated test suite; verifying changes currently means building and playing the game.
