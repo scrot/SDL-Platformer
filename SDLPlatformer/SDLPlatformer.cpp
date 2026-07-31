@@ -32,6 +32,11 @@ void handleKeyInput(const SDLState& state, GameState& gs, GameObject& obj, SDL_S
 void drawParallaxBackground(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity,
 	float& scrollPos, float scrollFactor, float deltaTime);
 
+/**
+ * @brief Application entry point: sets up SDL, loads resources, builds the
+ * level, and runs the main game loop (input -> update -> render) until the
+ * window is closed or Escape is pressed.
+ */
 int main(int argc, char *argv[])
 {
 	uint64_t prevTime = SDL_GetTicks();
@@ -286,8 +291,22 @@ bool initialize(SDLState& state)
 
 }
 
+/**
+ * @brief Draws a single GameObject's current sprite frame at its on-screen
+ * position, applying horizontal flip based on facing direction and a
+ * temporary damage-flash tint when obj.shouldFlash is set. When
+ * gs.debugMode is enabled, also draws the object's collider as a
+ * translucent red rectangle.
+ *
+ * @param state -- Global SDL/window state (used for the renderer).
+ * @param gs -- Current game state (used for the camera viewport and debug flag).
+ * @param obj -- The object to draw.
+ * @param width -- Width of one sprite-sheet frame, in pixels.
+ * @param height -- Height of one sprite-sheet frame, in pixels.
+ * @param deltaTime -- Time elapsed since the last frame, in seconds (used to tick down the flash timer).
+ */
 void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float width, float height, float deltaTime)
-{ 
+{
 	float srcX = obj.currentAnimation != -1 
 		? obj.animations[obj.currentAnimation].currentFrame() * width 
 		: (obj.spriteFrame - 1) * width;
@@ -349,6 +368,20 @@ void drawObject(const SDLState &state, GameState &gs, GameObject &obj, float wid
 	}
 }
 
+/**
+ * @brief Advances one GameObject by a single frame: ticks its animation,
+ * applies gravity, runs its type-specific state machine (player
+ * input/shooting, enemy chase AI, bullet lifetime), integrates
+ * acceleration/velocity/position, and resolves collisions against every
+ * other object in gs.layers (also updating obj.grounded via a ground
+ * sensor check).
+ *
+ * @param state -- Global SDL/window state (used for keyboard input).
+ * @param gs -- Current game state (used to look up the player and level layers for collisions).
+ * @param rs -- Loaded resources (textures/animations/audio) used when switching state, spawning bullets, etc.
+ * @param obj -- The object to update.
+ * @param deltaTime -- Time elapsed since the last frame, in seconds.
+ */
 void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj, float deltaTime)
 {
 	float currentDirection = 0.0f;
@@ -655,6 +688,20 @@ void update(const SDLState& state, GameState& gs, Resources& rs, GameObject &obj
 	}
 }
 
+/**
+ * @brief Builds the current level from hardcoded tile-code grids and
+ * populates gs's object layers/tiles accordingly (ground/panel geometry
+ * into layers[LAYER_IDX_LEVEL], the player and enemies into
+ * layers[LAYER_IDX_CHARACTERS], grass into foregroundTiles, and brick into
+ * backgroundTiles). Also sets gs.playerIndex to the created player's index.
+ *
+ * This is currently the sole source of level geometry -- the Tiled (.tmx)
+ * loader in tmx.cpp/tmx.h is not yet connected here.
+ *
+ * @param state -- Global SDL/window state (used to position tiles relative to the logical screen height).
+ * @param gs -- Game state to populate with the created objects.
+ * @param res -- Loaded resources providing textures/animations for the created objects.
+ */
 void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 {
 	/*
@@ -791,6 +838,17 @@ void createTiles(const SDLState& state, GameState& gs, const Resources& res)
 	assert(gs.playerIndex != -1);	// Ensure that the player was created
 }
 
+/**
+ * @brief Tests two GameObjects' colliders for AABB intersection and, if
+ * they overlap, dispatches to collisionResponse() to resolve it.
+ *
+ * @param state -- Global SDL/window state.
+ * @param gs -- Current game state.
+ * @param res -- Loaded resources (forwarded to collisionResponse() for things like hit sounds/textures).
+ * @param a -- First object; collision response is applied from this object's perspective.
+ * @param b -- Second object being tested against.
+ * @param deltaTime -- Time elapsed since the last frame, in seconds (forwarded to collisionResponse()).
+ */
 void checkCollision(const SDLState& state, GameState& gs, Resources &res, GameObject &a, GameObject &b, float deltaTime)
 {
 	SDL_FRect rectA
@@ -818,9 +876,32 @@ void checkCollision(const SDLState& state, GameState& gs, Resources &res, GameOb
 	}
 }
 
-void collisionResponse(const SDLState& state, GameState& gs, Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB, 
+/**
+ * @brief Resolves a detected collision between two objects, with behavior
+ * depending on both objects' types:
+ *  - player vs. level: pushed out of solid geometry (genericResponse()).
+ *  - player vs. living enemy: knocked back away from the enemy.
+ *  - moving bullet vs. level: plays a wall-hit sound and switches to its hit animation.
+ *  - moving bullet vs. living enemy: damages the enemy (killing it if hit points
+ *    reach zero), applies a damage flash/sound, and switches the bullet to its
+ *    hit animation. Bullets pass through already-dead enemies.
+ *  - enemy vs. anything: pushed out via genericResponse() (e.g. off level geometry).
+ *
+ * @param state -- Global SDL/window state.
+ * @param gs -- Current game state.
+ * @param res -- Loaded resources, used for hit/death sounds and textures.
+ * @param rectA -- objA's world-space collider rectangle (unused directly; intersection is used instead).
+ * @param rectB -- objB's world-space collider rectangle (unused directly; intersection is used instead).
+ * @param intersection -- Overlap rectangle between rectA and rectB, used to push objects apart along the shallower axis.
+ * @param objA -- The object collision response is applied to/from.
+ * @param objB -- The object objA collided with.
+ * @param deltaTime -- Time elapsed since the last frame, in seconds (currently unused).
+ */
+void collisionResponse(const SDLState& state, GameState& gs, Resources &res, const SDL_FRect &rectA, const SDL_FRect &rectB,
 						const SDL_FRect& intersection, GameObject &objA, GameObject &objB, float deltaTime)
 {
+	// Pushes objA out of objB along whichever axis has the shallower overlap,
+	// and zeroes objA's velocity on that axis. Used for solid, non-special-cased collisions.
 	const auto genericResponse = [&]()
 	{
 		if (intersection.w < intersection.h)
@@ -950,6 +1031,21 @@ void collisionResponse(const SDLState& state, GameState& gs, Resources &res, con
 				genericResponse();
 }
 
+/**
+ * @brief Handles a single key press/release event for a GameObject.
+ *
+ * Currently only reacts to the player pressing Space while idle or running,
+ * triggering a jump (switches to PlayerState::jumping and applies an
+ * upward, i.e. negative-Y, velocity impulse). Continuous movement (A/D,
+ * arrow keys) and shooting (J) are instead polled directly from
+ * SDLState::keys each frame inside update().
+ *
+ * @param state -- Global SDL/window state.
+ * @param gs -- Current game state.
+ * @param obj -- The object receiving input (only ObjectType::player is currently handled).
+ * @param key -- The scancode of the key that changed state.
+ * @param keyDown -- true if the key was just pressed, false if it was just released.
+ */
 void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_Scancode key, bool keyDown)
 {
 	const float JUMP_FORCE = -200.0f;
@@ -981,6 +1077,20 @@ void handleKeyInput(const SDLState &state, GameState &gs, GameObject &obj, SDL_S
 	}
 }
 
+/**
+ * @brief Draws one horizontally-tiled, horizontally-scrolling background
+ * layer, advancing and wrapping its scroll offset based on the player's
+ * horizontal velocity. Layers with a smaller scrollFactor move slower than
+ * the player, producing a parallax depth effect when multiple layers with
+ * different factors are drawn together.
+ *
+ * @param renderer -- Renderer to draw the layer with.
+ * @param texture -- The background layer's tileable texture.
+ * @param xVelocity -- Reference horizontal velocity (typically the player's) driving the scroll.
+ * @param scrollPos -- In/out current horizontal scroll offset for this layer; persisted across calls in GameState (e.g. bg2Scroll).
+ * @param scrollFactor -- Fraction of xVelocity this layer scrolls by; smaller values scroll slower, giving the illusion of depth.
+ * @param deltaTime -- Time elapsed since the last frame, in seconds.
+ */
 void drawParallaxBackground(SDL_Renderer* renderer, SDL_Texture* texture, float xVelocity,
 	float& scrollPos, float scrollFactor, float deltaTime)
 {

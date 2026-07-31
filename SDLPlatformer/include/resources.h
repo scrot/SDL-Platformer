@@ -8,6 +8,13 @@
 #include "animation.h"
 #include "sdlstate.h"
 
+/**
+ * @brief Owns every texture, sound, and animation definition used by the
+ * game, and loads them all up front via load(). The various `ANIM_*`
+ * constants are indices into the matching `*Anims` vector (e.g.
+ * `ANIM_PLAYER_IDLE` indexes into `playerAnims`) and are assigned to
+ * GameObject::currentAnimation to select which animation plays.
+ */
 struct Resources
 {
 	const int ANIM_PLAYER_IDLE = 0; // Index in the animation vector for the player idle animation
@@ -55,6 +62,13 @@ struct Resources
 	std::vector<MIX_Audio*> chunks;
 	MIX_Mixer* mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
 
+	/**
+	 * @brief Loads an audio file and tracks it for later cleanup.
+	 *
+	 * @param filepath -- Path to the audio file (wav/mp3/etc.) to load.
+	 *
+	 * @return The loaded MIX_Audio object.
+	 */
 	MIX_Audio* loadChunk(const std::string &filepath)
 	{
 		MIX_Audio* chunk = MIX_LoadAudio(mixer, filepath.c_str(), true);
